@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://talla.app/schemas/garment-spec/v1.json",
+  "title": "GarmentSpec",
+  "description": "The contract between Garment Understanding and every downstream consumer. Additive changes only within a major version. See docs/architecture/garment-spec.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "spec_version",
+    "id",
+    "tenant_id",
+    "source_photo_refs",
+    "category",
+    "block_id",
+    "block_version",
+    "fabric",
+    "attributes",
+    "textures",
+    "color_profile",
+    "sizes_available",
+    "style",
+    "confidence",
+    "confirmed_by_store"
+  ],
+  "properties": {
+    "spec_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semver of this schema, not of the garment."
+    },
+    "id": { "type": "string", "format": "uuid" },
+    "tenant_id": { "type": "string", "format": "uuid" },
+
+    "source_photo_refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["front", "back", "three_quarter"],
+      "description": "Content-addressed refs to the canonical re-encoded photos, never to raw uploads.",
+      "properties": {
+        "front": { "$ref": "#/$defs/assetRef" },
+        "back": { "$ref": "#/$defs/assetRef" },
+        "three_quarter": { "$ref": "#/$defs/assetRef" },
+        "detail": { "$ref": "#/$defs/assetRef" }
+      }
+    },
+
+    "category": {
+      "type": "string",
+      "description": "Maps to exactly one block in the block library. An unmappable garment is a rejection, not a guess.",
+      "enum": [
+        "tee", "shirt", "blouse", "knit", "sweatshirt", "jacket", "coat",
+        "dress", "abaya", "kaftan",
+        "jean", "trouser", "chino", "short", "skirt",
+        "shoe", "bag", "accessory"
+      ]
+    },
+    "block_id": { "type": "string", "minLength": 1 },
+    "block_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Pinned so a render stays reproducible after the library moves on."
+    },
+
+    "fabric": {
+      "type": "string",
+      "description": "Store selected, never inferred. Drives solver drape behaviour.",
+      "enum": ["cotton_jersey", "denim", "silk_viscose", "wool", "leather", "linen", "synthetic_blend"]
+    },
+
+    "attributes": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Feeds the solver and the screen-reader description. Null means not applicable to this category.",
+      "properties": {
+        "sleeve_length": { "type": ["string", "null"], "enum": ["sleeveless", "cap", "short", "three_quarter", "long", null] },
+        "neckline": { "type": ["string", "null"], "enum": ["crew", "v", "scoop", "boat", "collared", "mock", "hooded", null] },
+        "hem": { "type": ["string", "null"], "enum": ["straight", "curved", "asymmetric", "cropped", "ribbed", null] },
+        "closure": { "type": ["string", "null"], "enum": ["none", "button", "zip", "wrap", "tie", null] },
+        "rise": { "type": ["string", "null"], "enum": ["low", "mid", "high", null] },
+        "leg_shape": { "type": ["string", "null"], "enum": ["skinny", "slim", "straight", "wide", "tapered", "flared", null] }
+      }
+    },
+
+    "textures": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["front", "back"],
+      "description": "UV-ready assets in sRGB. The renderer works in linear and tone-maps once at output.",
+      "properties": {
+        "front": { "$ref": "#/$defs/assetRef" },
+        "back": { "$ref": "#/$defs/assetRef" },
+        "detail": { "$ref": "#/$defs/assetRef" }
+      }
+    },
+
+    "color_profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["working_space", "gray_card_found", "correction_applied"],
+      "description": "Records what white balancing happened, so a wrong color is diagnosable rather than mysterious.",
+      "properties": {
+        "working_space": { "type": "string", "enum": ["srgb", "display_p3"] },
+        "gray_card_found": { "type": "boolean" },
+        "illuminant_estimate_k": { "type": ["number", "null"], "minimum": 1500, "maximum": 12000 },
+        "correction_applied": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["gain_r", "gain_g", "gain_b", "exposure_ev"],
+          "properties": {
+            "gain_r": { "type": "number" },
+            "gain_g": { "type": "number" },
+            "gain_b": { "type": "number" },
+            "exposure_ev": { "type": "number" }
+          }
+        },
+        "residual_confidence": { "$ref": "#/$defs/confidenceValue" }
+      }
+    },
+
+    "sizes_available": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Holds the stock reference, never the count. Stock changes far more often than a spec and must not force a re-publish.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["size", "stock_ref"],
+        "properties": {
+          "size": { "type": "string", "enum": ["XS", "S", "M", "L", "XL", "XXL"] },
+          "stock_ref": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+
+    "style": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formality", "season", "dominant_colors", "pattern_busy", "volume", "slot"],
+      "description": "Consumed only by the styling engine.",
+      "properties": {
+        "formality": { "type": "integer", "minimum": 1, "maximum": 5, "description": "1 beachwear to 5 tailored. Hard rule: gap greater than 1 is rejected." },
+        "season": { "type": "string", "enum": ["hot", "mild", "cold", "all"] },
+        "dominant_colors": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "description": "CIELAB, not RGB. Harmony is judged in a perceptual space.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["L", "a", "b", "weight"],
+            "properties": {
+              "L": { "type": "number", "minimum": 0, "maximum": 100 },
+              "a": { "type": "number", "minimum": -128, "maximum": 127 },
+              "b": { "type": "number", "minimum": -128, "maximum": 127 },
+              "weight": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        },
+        "pattern_busy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "volume": { "type": "string", "enum": ["slim", "regular", "oversized"] },
+        "slot": { "type": "string", "enum": ["outer", "top", "bottom", "shoes", "bag", "accessory"] }
+      }
+    },
+
+    "confidence": {
+      "type": "object",
+      "description": "Per derived field. Keys are dotted paths into this document, for example 'style.formality'.",
+      "additionalProperties": { "$ref": "#/$defs/confidenceValue" }
+    },
+
+    "confirmed_by_store": {
+      "type": "boolean",
+      "description": "Set by the confirmation screen. A re-run must inherit prior confirmations and must never overwrite a confirmed field with a model output."
+    },
+    "confirmed_fields": {
+      "type": "array",
+      "description": "Dotted paths the store explicitly corrected or approved. These are immune to re-processing.",
+      "items": { "type": "string" }
+    }
+  },
+
+  "$defs": {
+    "assetRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "content_type"],
+      "properties": {
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "content_type": { "type": "string", "enum": ["image/jpeg", "image/png", "image/webp", "image/ktx2"] },
+        "bytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "confidenceValue": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}

@@ -4,6 +4,11 @@
 **Status:** Design approved in brainstorming. Not yet planned or built.
 **Authors:** Mahmoud Ayman + partner
 
+> **Implementation docs** live in [`docs/`](../../README.md), indexed there. This spec stays
+> the source of truth and those documents elaborate it: sections 13 to 15 in
+> `docs/frontend/`, section 12 in `docs/operations/security-checklist.md`, section 7 in
+> `docs/architecture/`, and section 24 in `docs/decisions/`.
+>
 > **Rev 2 scope.** Rev 1 settled the business: who buys, why, what is sold, and in what
 > order to build. That reasoning is intact. Rev 2 adds the engineering spine that was
 > missing — security and privacy, an explicit performance architecture, module boundaries
@@ -851,8 +856,8 @@ What mirrors and what does not — getting this wrong is the most common RTL err
   reserve safe-area padding below it.
 - Touch targets **≥ 44 px** with 8 px separation; expand hit areas rather than growing
   icons.
-- Icons from one set, one stroke weight (Lucide or equivalent). **No emoji as icons** —
-  they render differently per platform and cannot be themed.
+- Icons from one set, one weight (Phosphor). **No emoji as icons** — they render
+  differently per platform and cannot be themed. Never hand-roll an SVG icon.
 - Skeletons, not spinners, for anything over 300 ms. The catalog card skeleton reserves
   the exact final aspect ratio so nothing shifts.
 - Empty states say what to do next. A store with no garments yet sees "Add your first

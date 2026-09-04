@@ -1,4 +1,4 @@
-# Talla — طلّة
+# Talla · طلّة
 
 **See the whole look.** · **شوف طلّتك قبل ما تشتري**
 
@@ -13,15 +13,14 @@ outfit buys three pieces instead of one.
 
 ## Status
 
-Design stage. Nothing is built yet.
+Design stage. There is no application code yet.
 
-The design is specified in full — architecture, security, performance, design system,
-motion, accessibility, and build order — in:
+The design is specified in full in
+**[the spec](docs/superpowers/specs/2026-09-04-talla-design.md)**: product, architecture,
+security, performance, design system, motion, accessibility, and build order across 24
+sections.
 
-**[`docs/superpowers/specs/2026-09-04-talla-design.md`](docs/superpowers/specs/2026-09-04-talla-design.md)**
-
-Start at section 1 for the product, section 5 for the architecture, or section 21 for what
-changed between revisions.
+Implementation documentation is indexed in **[`docs/`](docs/README.md)**.
 
 ## The shape of it
 
@@ -35,10 +34,24 @@ changed between revisions.
 
 ## Governing constraints
 
-- All expensive computation happens once, at upload. A buyer click loads cached geometry.
-- Bandwidth is the cost driver, not compute or storage.
-- Tenant isolation is enforced in the database, never only in application code.
-- If a feature is not required to complete a cash-on-delivery order, it waits.
+Four sentences that decide most arguments before they start.
+
+- **All expensive computation happens once, at upload.** A buyer click loads cached
+  geometry and nothing else.
+- **Bandwidth is the cost driver**, not compute or storage. Asset budgets are commercial
+  terms, not engineering preferences.
+- **Tenant isolation is enforced in the database**, never only in application code.
+- **If a feature is not required to complete a cash-on-delivery order, it waits.**
+
+## Where to start
+
+| If you are | Read |
+|---|---|
+| New here | [The spec](docs/superpowers/specs/2026-09-04-talla-design.md), sections 1 to 4 |
+| Writing UI | [`docs/frontend/README.md`](docs/frontend/README.md) |
+| Writing backend or pipeline code | [`docs/architecture/overview.md`](docs/architecture/overview.md) |
+| Asking why something is the way it is | [`docs/decisions/`](docs/decisions/README.md) |
+| Contributing | [`CLAUDE.md`](CLAUDE.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 
 ## License
 

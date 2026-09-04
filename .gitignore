@@ -1,0 +1,70 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+.yarn/*
+!.yarn/patches
+!.yarn/releases
+!.yarn/plugins
+!.yarn/versions
+
+# Build output
+dist/
+build/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!**/fixtures/**/*.key
+secrets/
+
+# Test and coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+**/__screenshots__/diff/
+
+# Python (pipeline and tooling)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.uv/
+.ruff_cache/
+.pytest_cache/
+
+# 3D and media working files
+# Source blocks are versioned. Solver output and packed assets are not.
+/assets/solved/
+/assets/packed/
+*.blend1
+*.blend2
+
+# Local data
+*.sqlite
+*.sqlite3
+/tmp/
+/scratch/
+
+# Editor and OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
