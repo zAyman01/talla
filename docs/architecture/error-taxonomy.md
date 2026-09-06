@@ -67,7 +67,16 @@ attacker which check caught them is free information.
 | `UNDERSTAND_LOW_CONFIDENCE` | Derived fields fall below threshold | Confirmation screen, with the low-confidence fields pre-opened |
 
 `UNDERSTAND_LOW_CONFIDENCE` is not an error state in the interface. It changes the
-confirmation screen from "check this" to "we are unsure about these two fields".
+confirmation screen from "check this" to "we are unsure about these two fields". It
+therefore carries no banner copy, and in code it is an internal code with a note rather
+than a user-facing one.
+
+`UNDERSTAND_SEGMENTATION_FAILED` does reach the owner, so it carries copy like any
+ingest rejection.
+
+| Code | الرسالة العربية | English message | الإجراء بالعربية | Fix action |
+|---|---|---|---|---|
+| `UNDERSTAND_SEGMENTATION_FAILED` | تعذر فصل القطعة عن الخلفية. | We could not separate the piece from the background. | صوّر القطعة على سطح سادة بلون مختلف عنها ثم أعد الرفع. | Shoot the piece on a plain surface in a different color, then upload again. |
 
 ## Solver and assets, `SOLVE_*`, `ASSET_*`
 
@@ -114,6 +123,33 @@ the buyer is shown the new total rather than being silently charged either one.
 `AUTH_FORBIDDEN` and the absence of a "no such store" response are the same control: a
 404 and a 403 that differ tell an attacker which tenants exist.
 
+These reach a person, so they carry copy. `AUTH_OTP_INVALID` reads exactly like
+`ORDER_OTP_INVALID` on purpose: the two must be indistinguishable, or the difference
+tells an attacker whether the number is registered.
+
+| Code | الرسالة العربية | English message | الإجراء بالعربية | Fix action |
+|---|---|---|---|---|
+| `AUTH_OTP_INVALID` | الرمز غير صحيح. | That code is not right. | راجع الرسالة وحاول مرة أخرى. | Check the message and try again. |
+| `AUTH_OTP_RATE_LIMITED` | حدثت محاولات كثيرة. | Too many attempts. | انتظر بضع دقائق ثم حاول مرة أخرى. | Wait a few minutes and try again. |
+| `AUTH_SESSION_EXPIRED` | انتهت الجلسة بسبب عدم النشاط. | Your session ended after a period of inactivity. | سجّل الدخول مرة أخرى للمتابعة. | Sign in again to continue. |
+| `AUTH_FORBIDDEN` | لا تملك صلاحية الوصول إلى هذه الصفحة. | You do not have access to this page. | ارجع إلى لوحة المتجر. | Go back to your store dashboard. |
+
 ## Internal, `INTERNAL_*`
 
 One code, `INTERNAL_ERROR`, plus a trace ID. Everything else stays in the trace.
+
+| Code | الرسالة العربية | English message | الإجراء بالعربية | Fix action |
+|---|---|---|---|---|
+| `INTERNAL_ERROR` | حدث خطأ لدينا. | Something went wrong on our side. | حاول مرة أخرى بعد قليل. إذا تكرر، أرسل لنا الرقم المرجعي. | Try again shortly. If it keeps happening, send us the reference number. |
+
+---
+
+## In code
+
+`packages/errors` is this document's executable half: the same codes, the same copy, and
+a `toWireError` that builds the shape above. The two are changed together, and tests
+assert that every code named here exists there, that every user-facing code has copy in
+both languages with a fix action, and that no user-facing string contains an em-dash.
+
+An internal code never reaches a screen. `toWireError` collapses it to `INTERNAL_ERROR`
+carrying the trace ID, which is rule 6 enforced rather than remembered.
