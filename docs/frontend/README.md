@@ -75,7 +75,8 @@ times a second and collapses on exactly the phones this product targets.
 
 - `min-h-[100dvh]`, never `h-screen`. The Instagram in-app browser's chrome moves.
 - CSS Grid for layout. Never flexbox percentage math.
-- Breakpoints `sm 640`, `md 768`, `lg 1024`, `xl 1280`. Mobile first, always.
+- Breakpoints `sm 768`, `md 1024`, `lg 1440`. The base layout starts at 375px and is
+  mobile first, always. These values match the spec and are used consistently across surfaces.
 - Content max width 1200px.
 - Safe-area insets on the fixed header and the sticky cart bar. Both must clear the notch,
   the home indicator, and the in-app browser's own bars.

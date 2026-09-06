@@ -21,6 +21,8 @@ security, performance, design system, motion, accessibility, and build order acr
 sections.
 
 Implementation documentation is indexed in **[`docs/`](docs/README.md)**.
+The authority order for the spec, schema, tokens, and decisions is recorded in
+[`ADR-0015`](docs/decisions/0015-documentation-authority-and-contracts.md).
 
 ## The shape of it
 

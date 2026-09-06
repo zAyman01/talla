@@ -153,7 +153,8 @@ they are the cost of operating at all.
 
 ## 5. Architecture — modules
 
-Eight modules, each with one job and a defined interface.
+Ten modules, each with one job and a defined interface. `shared` is a package boundary,
+not a product module, and the worker processes are runtime boundaries rather than modules.
 
 | Module | Responsibility | Depends on |
 |---|---|---|
@@ -984,7 +985,7 @@ preference.
 
 ### 16.2 Module boundaries
 
-The eight modules of section 5 are directories with published interfaces. Cross-module
+The ten modules of section 5 are directories with published interfaces. Cross-module
 imports of internals are **blocked by an import-boundary linter in CI**, not by review.
 Shared code lives in an explicit `shared` module; "utils" is not a module and is not
 allowed to become one, because it is where boundaries go to die.
@@ -1191,7 +1192,7 @@ rather than buried.
 | 8 | *(no security section)* | STRIDE model, sandboxed image worker, database-enforced tenancy, commerce integrity | Untrusted image parsing and multi-tenant data are the two highest-damage surfaces and were unaddressed. §12 |
 | 9 | Legal exposure "currently low" | PDPL obligations attach from the first COD order | True for biometrics, wrong for ordinary PII — which is collected on day one. §12.7, risk 9 |
 | 10 | Frozen `GarmentSpec` by agreement | Frozen by generated types, additive-only rule, and contract tests in CI | A social freeze does not survive a deadline. §7 |
-| 11 | Eight modules | Nine — Asset Pipeline split out; boundaries enforced by a linter | Physical correctness and wire bytes are different jobs with different failure modes, and the pipeline is where the budget is actually enforced. §5, §16.2 |
+| 11 | Eight modules | Ten — Asset Pipeline split out and Commerce plus Tenancy made explicit; boundaries enforced by a linter | Physical correctness, wire bytes, commerce, and tenant isolation have different failure modes. §5, §16.2 |
 | 12 | *(runtime shape unstated)* | Modular monolith plus a worker pool, explicitly not microservices | Two engineers; service boundaries would cost more than they return. §6 |
 | 13 | Holdout slice, compare AOV | Items per order primary, sticky assignment, pre-registered analysis, power check, 20% holdout, report a CI | A pilot's sample is small; an unplanned analysis produces a number that does not survive the second sales conversation. §17 |
 | 14 | *(nothing on motion, a11y, or design tokens)* | §13, §14, §15 | The spec asked for a specific look and specified none of it. |
@@ -1312,6 +1313,7 @@ different remembered versions of an agreement.
 | ADR-012 | Reference device is the Samsung Galaxy A16, 4 GB | A single point of measurement, and budgets that quietly loosen as the phone ages; in exchange every budget in §11.1 becomes a fact rather than an opinion |
 | ADR-013 | Primary database in EU Frankfurt, CDN edge in MENA | Loses a Gulf buyer who demands in-region residency; Egypt has no in-country region, so every option is a cross-border transfer and the strictest destination is the strongest position |
 | ADR-014 | Margin nudge is a tiebreak only, capped at one rank | Almost no merchandising leverage in the ranker; merchandising belongs to the owner through pins, where it is visible |
+| ADR-015 | Documentation authority and executable contracts | A small documentation review cost, in exchange for one baseline across the spec, schema, tokens, and companion docs |
 
 **Still open, and not blockers for Phase 0:**
 

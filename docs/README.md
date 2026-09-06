@@ -2,9 +2,10 @@
 
 Talla is at design stage. There is no application code yet.
 
-**The spec is the source of truth.** Everything else here elaborates it for implementation.
-Where a document and the spec disagree, one of them is a bug, and which one is a decision:
-record it in [`decisions/`](decisions/).
+**The spec is the product source of truth.** The schema, token file, and accepted decision
+records are the implementation contracts that make it executable. Everything else here
+explains or operationalizes those contracts. Where documents disagree, stop and resolve
+the conflict in a decision record before building.
 
 ---
 
@@ -37,7 +38,7 @@ docs/
   frontend/
     README.md                    Design read, surface split, dials, banned patterns, pre-flight
     design-system.md             Color, typography, space, RTL, components, and the reasoning
-    tokens.css                   Every value. A raw hex in a component is a bug
+    tokens.css                   Machine-readable design tokens. A raw component value is a bug
     motion.md                    Motion system and the drape settle
     accessibility.md             WCAG 2.2 AA, the canvas problem, the Arabic problem
 
@@ -47,7 +48,7 @@ docs/
 
   decisions/
     README.md                    Index and format
-    0001 to 0014                 Accepted decisions
+    0001 to 0015                 Accepted decisions
 ```
 
 ## How these relate to the spec
@@ -74,3 +75,7 @@ trust it.
 - A decision that a future contributor might want to reverse gets a record in
   [`decisions/`](decisions/).
 - Accepted decision records are never edited to change their meaning. They are superseded.
+- The schema and token file are reviewed like code. A consumer change without its contract
+  update is incomplete.
+- The spec's phase gates are release gates. A later phase cannot silently waive an earlier
+  failure.

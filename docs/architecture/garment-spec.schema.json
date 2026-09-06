@@ -20,7 +20,8 @@
     "sizes_available",
     "style",
     "confidence",
-    "confirmed_by_store"
+    "confirmed_by_store",
+    "confirmed_fields"
   ],
   "properties": {
     "spec_version": {

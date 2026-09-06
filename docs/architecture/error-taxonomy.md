@@ -40,20 +40,20 @@ experiences of Talla's quality, so a rejection that says "invalid input" costs a
 The store owner sees these. Each one must be fixable by the owner without contacting
 support.
 
-| Code | English message | Fix action |
-|---|---|---|
-| `INGEST_BACK_PHOTO_MISSING` | The back photo is missing. | Add a photo of the back and upload again. |
-| `INGEST_ANGLE_MISSING` | The three quarter angle is missing. | Add a photo taken from the side, turned about halfway. |
-| `INGEST_TOO_DARK` | The photo is too dark to read the color. | Shoot near a window or turn on more light, then upload again. |
-| `INGEST_BLURRY` | The photo is not sharp enough. | Hold the phone steady, tap to focus, and shoot again. |
-| `INGEST_BACKGROUND_BUSY` | The background has too much in it. | Lay the piece on a plain surface with nothing else in frame. |
-| `INGEST_GARMENT_CROPPED` | Part of the piece is outside the frame. | Step back so the whole piece fits, then shoot again. |
-| `INGEST_GRAY_CARD_MISSING` | The gray card is not in the photo. | Put the gray card flat next to the piece and shoot again. |
-| `INGEST_GRAY_CARD_UNREADABLE` | The gray card is in shadow. | Move the card into the same light as the piece. |
-| `INGEST_FILE_TOO_LARGE` | The file is larger than we can accept. | Send the photo straight from the camera roll without editing it. |
-| `INGEST_FORMAT_UNSUPPORTED` | We cannot read this file type. | Send a JPEG, PNG, or WebP photo. |
-| `INGEST_FILE_REJECTED` | We could not read this file. | Take the photo again with the phone camera. |
-| `INGEST_NO_MATCHING_BLOCK` | We do not have a shape for this piece yet. | Tell us about it and we will add it. Meanwhile, upload a different piece. |
+| Code | الرسالة العربية | English message | الإجراء بالعربية | Fix action |
+|---|---|---|---|---|
+| `INGEST_BACK_PHOTO_MISSING` | صورة الخلف مفقودة. | The back photo is missing. | أضف صورة للخلف ثم ارفع الصور مرة أخرى. | Add a photo of the back and upload again. |
+| `INGEST_ANGLE_MISSING` | صورة الزاوية الثلاثية مفقودة. | The three quarter angle is missing. | أضف صورة من الجانب بزاوية نصفية تقريبًا. | Add a photo taken from the side, turned about halfway. |
+| `INGEST_TOO_DARK` | الصورة مظلمة جدًا لقراءة اللون. | The photo is too dark to read the color. | صوّر قرب نافذة أو زد الإضاءة ثم أعد التصوير. | Shoot near a window or turn on more light, then upload again. |
+| `INGEST_BLURRY` | الصورة غير واضحة بما يكفي. | The photo is not sharp enough. | ثبّت الهاتف، اضغط للتركيز، ثم أعد التصوير. | Hold the phone steady, tap to focus, and shoot again. |
+| `INGEST_BACKGROUND_BUSY` | الخلفية تحتوي على عناصر كثيرة. | The background has too much in it. | ضع القطعة على سطح سادة وأبعد كل العناصر من الإطار. | Lay the piece on a plain surface with nothing else in frame. |
+| `INGEST_GARMENT_CROPPED` | جزء من القطعة خارج الإطار. | Part of the piece is outside the frame. | ابتعد قليلًا حتى تظهر القطعة كاملة ثم أعد التصوير. | Step back so the whole piece fits, then shoot again. |
+| `INGEST_GRAY_CARD_MISSING` | بطاقة الرمادي غير موجودة في الصورة. | The gray card is not in the photo. | ضع بطاقة الرمادي بجانب القطعة في الإضاءة نفسها ثم أعد التصوير. | Put the gray card flat next to the piece and shoot again. |
+| `INGEST_GRAY_CARD_UNREADABLE` | بطاقة الرمادي في الظل. | The gray card is in shadow. | انقل البطاقة إلى الإضاءة نفسها الموجودة على القطعة. | Move the card into the same light as the piece. |
+| `INGEST_FILE_TOO_LARGE` | حجم الملف أكبر من المسموح. | The file is larger than we can accept. | أرسل الصورة مباشرة من ألبوم الكاميرا دون تعديلها. | Send the photo straight from the camera roll without editing it. |
+| `INGEST_FORMAT_UNSUPPORTED` | لا يمكننا قراءة نوع هذا الملف. | We cannot read this file type. | أرسل صورة بصيغة JPEG أو PNG أو WebP. | Send a JPEG, PNG, or WebP photo. |
+| `INGEST_FILE_REJECTED` | تعذر قراءة هذا الملف. | We could not read this file. | التقط الصورة مرة أخرى باستخدام كاميرا الهاتف. | Take the photo again with the phone camera. |
+| `INGEST_NO_MATCHING_BLOCK` | لا نملك شكلًا مناسبًا لهذه القطعة بعد. | We do not have a shape for this piece yet. | أخبرنا عنها وارفع قطعة أخرى مؤقتًا. | Tell us about it and we will add it. Meanwhile, upload a different piece. |
 
 `INGEST_FILE_REJECTED` is deliberately vague to the user and deliberately specific in the
 trace. It covers content sniffing failures, pixel bombs, and polyglot files, and telling an
@@ -88,15 +88,15 @@ re-shoot.
 The buyer sees these, in Arabic, mid-purchase. They are the highest-stakes copy in the
 product.
 
-| Code | English message | Fix action |
-|---|---|---|
-| `STOCK_UNAVAILABLE` | This size just sold out. | Pick another size, or remove it and continue. |
-| `STOCK_INSUFFICIENT` | Only some of what you picked is left. | We have updated the amounts. Check the cart and continue. |
-| `ORDER_PHONE_UNVERIFIED` | We need to confirm your number first. | Enter the code we sent you. |
-| `ORDER_OTP_INVALID` | That code is not right. | Check the message and try again. |
-| `ORDER_OTP_EXPIRED` | That code has expired. | Ask for a new code. |
-| `ORDER_RATE_LIMITED` | Too many attempts. | Wait a few minutes and try again. |
-| `ORDER_TOTAL_MISMATCH` | Prices changed while you were shopping. | We have updated the total. Check it and confirm. |
+| Code | الرسالة العربية | English message | الإجراء بالعربية | Fix action |
+|---|---|---|---|---|
+| `STOCK_UNAVAILABLE` | هذا المقاس نفد للتو. | This size just sold out. | اختر مقاسًا آخر أو أزله وتابع. | Pick another size, or remove it and continue. |
+| `STOCK_INSUFFICIENT` | لم يتبقَ سوى جزء مما اخترته. | Only some of what you picked is left. | حدّثنا الكميات. راجع السلة وتابع. | We have updated the amounts. Check the cart and continue. |
+| `ORDER_PHONE_UNVERIFIED` | نحتاج إلى تأكيد رقمك أولًا. | We need to confirm your number first. | أدخل الرمز الذي أرسلناه إليك. | Enter the code we sent you. |
+| `ORDER_OTP_INVALID` | الرمز غير صحيح. | That code is not right. | راجع الرسالة وحاول مرة أخرى. | Check the message and try again. |
+| `ORDER_OTP_EXPIRED` | انتهت صلاحية الرمز. | That code has expired. | اطلب رمزًا جديدًا. | Ask for a new code. |
+| `ORDER_RATE_LIMITED` | حدثت محاولات كثيرة. | Too many attempts. | انتظر بضع دقائق ثم حاول مرة أخرى. | Wait a few minutes and try again. |
+| `ORDER_TOTAL_MISMATCH` | تغيرت الأسعار أثناء التسوق. | Prices changed while you were shopping. | حدّثنا الإجمالي. راجعه ثم أكد الطلب. | We have updated the total. Check it and confirm. |
 
 `ORDER_TOTAL_MISMATCH` is the user-facing half of a security control: the client never
 sends a price, and the server recomputes at submission. When the recomputed total differs,

@@ -5,7 +5,7 @@
 
 ## Context
 
-Talla has nine modules with genuinely different jobs, and two of them (the Dress Solver and
+Talla has ten modules with genuinely different jobs, and two of them (the Dress Solver and
 the Asset Pipeline) have a completely different resource profile from the web application:
 minutes of GPU time per job, versus milliseconds of database time per request. That
 difference is the standard argument for splitting services.
@@ -15,7 +15,7 @@ The team is two engineers, one of whom also owns sales.
 ## Decision
 
 One deployable web application containing all request-serving modules, plus a separate
-asynchronous worker pool for the image and GPU work. The nine modules are directories with
+asynchronous worker pool for the image and GPU work. The ten modules are directories with
 published interfaces, enforced by an import-boundary linter in CI.
 
 Not microservices.

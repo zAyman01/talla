@@ -58,7 +58,8 @@ is diagnosable rather than mysterious. See
 **Commerce**
 
 `sizes_available` plus a per-size stock reference. The spec holds the reference, not the
-count. Stock changes far more often than a spec does and must not force a re-publish.
+count. Price, stock quantity, and order state belong to `commerce`, not this contract.
+Stock changes far more often than a spec does and must not force a re-publish.
 
 **Style fields**
 
@@ -75,8 +76,9 @@ Consumed only by `styling`:
 
 ## Confidence and confirmation
 
-Every derived field carries a `confidence`. `confirmed_by_store` marks the spec as
-store-verified after the confirmation screen.
+Every derived field carries a `confidence`. `confirmed_fields` records the dotted paths
+the store reviewed or corrected, and `confirmed_by_store` marks the complete confirmation
+step after the confirmation screen.
 
 **A re-run never overwrites a store-confirmed field.** Inherit prior confirmations. Losing
 an owner's corrections is the fastest way to make them stop correcting, and the

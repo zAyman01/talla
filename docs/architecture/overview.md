@@ -41,7 +41,8 @@ talla/
 ```
 
 Each `modules/*` directory publishes one interface file. Everything else in it is
-internal. This is enforced by an import-boundary linter in CI, not by discipline.
+internal. `packages/garment-spec` and `packages/tokens` publish generated contracts, not
+business behavior. This is enforced by an import-boundary linter in CI, not by discipline.
 
 ## Module contracts
 
@@ -75,6 +76,9 @@ beyond a database read and a ranking cache lookup.
 An upload request enqueues a job and returns. The job chain is
 `ingest, understanding, solve, assets, publish`, each stage idempotent and each emitting
 its timing and cost to one trace per garment.
+
+Price, stock, and order state remain in `commerce`; they are not part of `GarmentSpec` and
+never travel through the image or GPU worker.
 
 ## Content addressing
 
