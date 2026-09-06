@@ -1,0 +1,93 @@
+{
+  "spec_version": "v1",
+  "id": "8f14e45f-ceea-467a-9575-3b7d4b2c1a90",
+  "tenant_id": "3c6e0b8a-9c15-4d6f-b1a2-7e5f0c9d4b21",
+  "source_photo_refs": {
+    "front": {
+      "sha256": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae",
+      "content_type": "image/jpeg",
+      "bytes": 1843201
+    },
+    "back": {
+      "sha256": "fcde2b2edba56bf408601fb721fe9b5c338d10ee429ea04fae5511b68fbf8fb9",
+      "content_type": "image/jpeg",
+      "bytes": 1755402
+    },
+    "three_quarter": {
+      "sha256": "b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c",
+      "content_type": "image/jpeg",
+      "bytes": 1690338
+    }
+  },
+  "category": "tee",
+  "block_id": "tee_regular",
+  "block_version": "1.2.0",
+  "fabric": "cotton_jersey",
+  "attributes": {
+    "sleeve_length": "short",
+    "neckline": "crew",
+    "hem": "straight",
+    "closure": "none",
+    "rise": null,
+    "leg_shape": null
+  },
+  "textures": {
+    "front": {
+      "sha256": "7d865e959b2466918c9863afca942d0fb89d7c9ac0c99bafc3749504ded97730",
+      "content_type": "image/ktx2",
+      "bytes": 412880
+    },
+    "back": {
+      "sha256": "6b23c0d5f35d1b11f9b683f0b0a617355deb11277d91ae091d399c655b87940d",
+      "content_type": "image/ktx2",
+      "bytes": 401004
+    }
+  },
+  "color_profile": {
+    "working_space": "srgb",
+    "gray_card_found": true,
+    "illuminant_estimate_k": 5200,
+    "correction_applied": {
+      "gain_r": 1.021,
+      "gain_g": 1,
+      "gain_b": 0.964,
+      "exposure_ev": 0.15
+    },
+    "residual_confidence": 0.91
+  },
+  "sizes_available": [
+    {
+      "size": "S",
+      "stock_ref": "stock_tee_regular_s"
+    },
+    {
+      "size": "M",
+      "stock_ref": "stock_tee_regular_m"
+    },
+    {
+      "size": "L",
+      "stock_ref": "stock_tee_regular_l"
+    }
+  ],
+  "style": {
+    "formality": 2,
+    "season": "hot",
+    "dominant_colors": [
+      {
+        "L": 62.4,
+        "a": -1.8,
+        "b": 3.2,
+        "weight": 0.87
+      }
+    ],
+    "pattern_busy": 0.08,
+    "volume": "regular",
+    "slot": "top"
+  },
+  "confidence": {
+    "attributes.neckline": 0.94,
+    "style.formality": 0.81
+  },
+  "confirmed_by_store": true,
+  "confirmed_fields": ["fabric", "sizes_available"]
+}

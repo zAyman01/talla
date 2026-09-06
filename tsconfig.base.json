@@ -8,6 +8,10 @@
     "moduleDetection": "force",
     "verbatimModuleSyntax": true,
     "resolveJsonModule": true,
+    // Node 24 runs TypeScript directly by stripping types, and it resolves the
+    // specifier it is given. Writing '.ts' in the import is what makes the generator
+    // scripts runnable without a build step or a loader.
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
 
     "strict": true,
@@ -18,10 +22,8 @@
     "noPropertyAccessFromIndexSignature": true,
     "useUnknownInCatchVariables": true,
 
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "composite": true,
+    // Nothing here emits. Packages are consumed as TypeScript source inside the
+    // workspace, and the apps' bundler does the emitting in Phase 1.
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   }

@@ -10,7 +10,7 @@
   },
   "scripts": {
     "generate": "pnpm --filter \"./packages/**\" --sequential run generate",
-    "typecheck": "tsc --build",
+    "typecheck": "tsc -p tsconfig.json && pnpm -r --filter \"./packages/**\" run typecheck",
     "lint": "eslint .",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
