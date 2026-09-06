@@ -1,0 +1,11 @@
+# Workspace layout mirrors docs/architecture/overview.md. Apps arrive in Phase 1 with the
+# Next.js work; the glob is here so adding one needs no workspace change.
+packages:
+  - 'packages/*'
+  - 'modules/*'
+  - 'workers/*'
+  - 'apps/*'
+allowBuilds:
+  # esbuild ships a platform binary and verifies it in a postinstall step. Vitest does
+  # not run without it. Nothing else in the tree gets a build script.
+  esbuild: true

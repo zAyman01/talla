@@ -1,0 +1,13 @@
+{
+  "printWidth": 90,
+  "singleQuote": true,
+  "semi": true,
+  "trailingComma": "all",
+  "endOfLine": "lf",
+  "overrides": [
+    {
+      "files": ["*.md", "*.css"],
+      "options": { "printWidth": 90 }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+pnpm-lock.yaml
+
+# Generated contracts. The generator owns their formatting; a formatter that
+# rewrites them makes the drift check fail for no reason.
+packages/garment-spec/src/generated
+packages/tokens/src/generated
+
+# The documentation predates the formatter and its wrapping is deliberate.
+docs
+*.md

@@ -28,6 +28,7 @@ here.
 | [0013](0013-hosting-region-eu-frankfurt.md) | The primary database is hosted in EU Frankfurt | Accepted |
 | [0014](0014-margin-nudge-cap.md) | The margin nudge is a tiebreak only, capped at one rank | Accepted |
 | [0015](0015-documentation-authority-and-contracts.md) | Documentation authority and executable contracts | Accepted |
+| [0016](0016-repository-tooling.md) | pnpm workspaces, Vitest, ESLint flat config, dependency-cruiser | Accepted |
 
 ## Format
 
