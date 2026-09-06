@@ -24,7 +24,9 @@ export default defineConfig([
         // This config file is itself JavaScript and belongs to no tsconfig, so it needs
         // the default project or linting the repository root fails on the linter's own
         // configuration.
-        projectService: { allowDefaultProject: ['eslint.config.js'] },
+        projectService: {
+          allowDefaultProject: ['eslint.config.js', '.dependency-cruiser.cjs'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
@@ -43,6 +45,15 @@ export default defineConfig([
             'There is no utils module and there will not be one. Shared code goes in modules/shared (spec 16.2).',
         },
       ],
+    },
+  },
+  {
+    // dependency-cruiser reads a CommonJS config, so this one file is CommonJS and
+    // needs its globals declared. It is the only one.
+    files: ['**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: { module: 'writable', require: 'readonly', __dirname: 'readonly' },
     },
   },
   prettier,
