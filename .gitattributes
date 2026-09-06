@@ -1,0 +1,79 @@
+# Line endings are decided here, not by whoever happens to check the repo out.
+# Two engineers on two operating systems otherwise produce diffs that are entirely
+# invisible line-ending churn, and a formatter gate in CI will argue with both of them.
+
+* text=auto eol=lf
+
+# Windows-only files that genuinely need CRLF.
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Shell scripts and git hooks must stay LF or they do not execute.
+*.sh   text eol=lf
+*.bash text eol=lf
+
+# Explicitly textual, so a stray heuristic never treats one as binary.
+*.md       text
+*.css      text
+*.json     text
+*.jsonc    text
+*.yml      text
+*.yaml     text
+*.toml     text
+*.sql      text
+*.ts       text
+*.tsx      text
+*.js       text
+*.jsx      text
+*.py       text
+*.glsl     text
+*.svg      text
+
+# Binary. Never diffed, never merged, never line-ending normalized.
+# 3D and asset pipeline output.
+*.glb    binary
+*.gltf   binary
+*.bin    binary
+*.ktx2   binary
+*.basis  binary
+*.blend  binary
+*.fbx    binary
+*.obj    binary
+*.usdz   binary
+
+# Media.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.avif  binary
+*.gif   binary
+*.ico   binary
+*.mp4   binary
+*.webm  binary
+*.pdf   binary
+
+# Fonts. Self-hosted, so they live in the repo.
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.otf    binary
+
+# Color management. A corrupted profile silently breaks the color pipeline in
+# section 9, so it must never be touched by normalization.
+*.icc  binary
+*.icm  binary
+
+# Generated and machine-owned. Kept out of diffs and out of language statistics.
+# Never hand-edited; see CLAUDE.md section 3.
+package-lock.json  linguist-generated -diff
+pnpm-lock.yaml     linguist-generated -diff
+yarn.lock          linguist-generated -diff
+uv.lock            linguist-generated -diff
+packages/garment-spec/**  linguist-generated
+packages/tokens/**        linguist-generated
+
+# Reference images for the golden render gate. Diffing them is meaningless;
+# the gate compares them perceptually, not textually.
+**/__screenshots__/**  binary
