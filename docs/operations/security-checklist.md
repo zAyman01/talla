@@ -104,8 +104,11 @@ regional equivalents. Obligations attach from the first order, not at stage two.
 
 - [ ] Controller and processor split written into the store contract. Otherwise the store
       assumes Talla carries it and Talla assumes the store does.
-- [ ] Primary database in a MENA or EU region. Cross-border transfer is the provision most
-      likely to be enforced, and choosing the region on day one costs nothing.
+- [ ] Primary database in **EU Frankfurt**, object storage alongside it, CDN edge in MENA
+      ([ADR-0013](../decisions/0013-hosting-region-eu-frankfurt.md)). Egypt has no
+      in-country region, so every option is a cross-border transfer; the lawful basis and
+      the transfer clauses are required either way.
+- [ ] Hosting jurisdiction named plainly in the Arabic privacy notice.
 - [ ] Collect only what a courier needs. No date of birth, no gender, no persistent buyer
       profile in v1.
 - [ ] Buyer contact fields encrypted at column level, so a leaked backup is not a leaked

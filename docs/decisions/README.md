@@ -23,6 +23,10 @@ here.
 | [0008](0008-whatsapp-reference-not-payload.md) | WhatsApp handoff carries a reference, not order contents | Accepted |
 | [0009](0009-content-addressed-assets.md) | Content-addressed immutable assets, one-year cache | Accepted |
 | [0010](0010-tier-c-fallback-in-phase-1.md) | The tier C sprite fallback is built in Phase 1, not later | Accepted |
+| [0011](0011-frontend-stack.md) | Next.js, Tailwind v4, Three.js, Motion for the frontend stack | Accepted |
+| [0012](0012-reference-device.md) | The reference device is a Samsung Galaxy A16, 4 GB | Accepted |
+| [0013](0013-hosting-region-eu-frankfurt.md) | The primary database is hosted in EU Frankfurt | Accepted |
+| [0014](0014-margin-nudge-cap.md) | The margin nudge is a tiebreak only, capped at one rank | Accepted |
 
 ## Format
 

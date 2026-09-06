@@ -47,7 +47,7 @@ docs/
 
   decisions/
     README.md                    Index and format
-    0001 to 0010                 Accepted decisions
+    0001 to 0014                 Accepted decisions
 ```
 
 ## How these relate to the spec

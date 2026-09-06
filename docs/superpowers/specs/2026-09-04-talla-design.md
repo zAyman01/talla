@@ -1,6 +1,8 @@
 # Talla — Design Spec
 
 **Date:** 2026-09-04 · **Revised:** 2026-09-04 (rev 2)
+**Amended:** 2026-09-06 · ADR-011 to ADR-014 recorded in §24; the margin nudge cap in §10
+and the reference device in §11.1 are now named. No rev 2 reasoning changed.
 **Status:** Design approved in brainstorming. Not yet planned or built.
 **Authors:** Mahmoud Ayman + partner
 
@@ -432,9 +434,12 @@ rules and never replaces them, so a bad model cannot produce a nonsense outfit.
 - Ranking runs server-side and its result is cached per `(garment, size, stock epoch)`.
   The stock epoch invalidates the cache on any stock change, which keeps rule 2 true
   without recomputing on every request.
-- The margin nudge has a **hard cap** on how far it can move an item, recorded in the
-  decision log. Left uncapped it will be raised under revenue pressure until the strip
-  is visibly self-serving.
+- The margin nudge has a **hard cap** on how far it can move an item. Left uncapped it
+  will be raised under revenue pressure until the strip is visibly self-serving. The cap
+  is **tiebreak only, within a 2% soft-score band, at most one rank of movement**, and it
+  never outranks a pin, never adds an item the hard rules rejected, and never changes the
+  one-line reason. Recorded in ADR-014, asserted by the ranker's property tests, and not
+  a configuration value.
 
 ---
 
@@ -465,8 +470,11 @@ exceeding GPU memory does not degrade, it loses the WebGL context and the viewer
 blank. That is a hard cap, not a target.
 
 **Reference device.** One named, cheap, real Android phone, bought in week one and used
-for every measurement — something in the ~$120 bracket with 4 GB RAM and a low-tier
-Adreno/Mali GPU. Named in the decision log. Every budget above means "on that phone".
+for every measurement. It is the **Samsung Galaxy A16, 4 GB variant**: a top-selling
+budget Android in the primary market, mid-tier Mali GPU, squarely tier B and close enough
+to tier C that GPU memory pressure shows up here first. Recorded in ADR-012. Every budget
+above means "on that phone", and the Lighthouse CI gate throttles to a profile derived
+from it.
 
 **Test matrix.** Every release is checked on: reference Android in Chrome, reference
 Android in the **Instagram in-app WebView**, one iPhone in Safari, and one desktop
@@ -1296,12 +1304,20 @@ different remembered versions of an agreement.
 | ADR-009 | Content-addressed immutable assets, one-year cache | Storage of superseded versions; cache invalidation ceases to be a problem |
 | ADR-010 | Tier C sprite turntable built in Phase 1, not later | Pipeline work before it is provably needed; it is the only safe answer to a lost WebGL context |
 
+**Added after rev 2, on 2026-09-06:**
+
+| ID | Decision | Trade-off accepted |
+|---|---|---|
+| ADR-011 | Next.js App Router, Tailwind v4, Three.js, Motion for the frontend | A large framework dependency and its upgrade cadence, in exchange for a small critical path on a weak phone and one source of truth for tokens |
+| ADR-012 | Reference device is the Samsung Galaxy A16, 4 GB | A single point of measurement, and budgets that quietly loosen as the phone ages; in exchange every budget in §11.1 becomes a fact rather than an opinion |
+| ADR-013 | Primary database in EU Frankfurt, CDN edge in MENA | Loses a Gulf buyer who demands in-region residency; Egypt has no in-country region, so every option is a cross-border transfer and the strictest destination is the strongest position |
+| ADR-014 | Margin nudge is a tiebreak only, capped at one rank | Almost no merchandising leverage in the ranker; merchandising belongs to the owner through pins, where it is visible |
+
 **Still open, and not blockers for Phase 0:**
 
-- **Technology choices** — 3D engine, segmentation model, cloth solver, web framework,
-  hosting region. Chosen during implementation planning, informed by what Phase 0 proves.
-  The hosting region choice is constrained by §12.7 and should be settled early.
-- **Reference device** — the exact phone model, bought in week one and named here.
+- **Technology choices** — segmentation model and cloth solver. Chosen during
+  implementation planning, informed by what Phase 0 proves. The 3D engine, web framework,
+  and hosting region are now settled in ADR-011 and ADR-013.
 - **Buyer personalization** — measurements, then photo-derived bodies. Stage two, and it
   carries the biometric obligations noted in risk 9.
 - **Manual finishing tier** — pricing and workflow for hand-corrected hero garments.

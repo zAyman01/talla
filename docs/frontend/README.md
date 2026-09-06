@@ -48,6 +48,9 @@ else is quiet so that the settle reads as meaningful rather than as one more thi
 
 ## 3. Stack
 
+Recorded in [ADR-0011](../decisions/0011-frontend-stack.md). Deviating from a row here is
+a superseding record, not a preference.
+
 | Concern | Choice | Notes |
 |---|---|---|
 | Framework | Next.js, App Router, Server Components by default | Client components are leaves, not layouts |
@@ -164,6 +167,10 @@ stage area. Where the design and the merchandise compete, the merchandise wins.
 
 Run before any UI change is done. On the reference device, in both themes, with reduced
 motion enabled.
+
+The reference device is the **Samsung Galaxy A16, 4 GB**
+([ADR-0012](../decisions/0012-reference-device.md)). Not a simulator, not a laptop with
+CPU throttling on. The physical phone.
 
 - [ ] Zero em-dashes in any visible string.
 - [ ] No raw hex values. Every color comes from a token.
