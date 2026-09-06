@@ -1,6 +1,7 @@
 # Documentation
 
-Talla is at design stage. There is no application code yet.
+Talla is at design stage. The repository now carries its foundation: a workspace, the
+generated contracts, the module interfaces, and the CI gates. No product behavior yet.
 
 **The spec is the product source of truth.** The schema, token file, and accepted decision
 records are the implementation contracts that make it executable. Everything else here
@@ -45,6 +46,10 @@ docs/
   operations/
     capture-protocol.md          How a garment is photographed, and why each rule exists
     security-checklist.md        Operational companion to spec section 12
+
+  superpowers/plans/
+    2026-09-06-build-phases.md   Phase F to Phase 3, with the gate that ends each
+    2026-09-06-phase-f-foundation.md  The foundation phase, task by task
 
   decisions/
     README.md                    Index and format

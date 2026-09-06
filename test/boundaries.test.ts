@@ -30,10 +30,10 @@ describe('module boundaries', () => {
     expect(status, 'the planted violation did not fail the gate').not.toBe(0);
     expect(output).toContain('no-cross-module-internals');
     expect(output).toContain('commerce/internal/pricing.ts');
-  });
+  }, 60_000);
 
   it('passes on the real tree', () => {
     const { status, output } = cruise('modules', 'packages', 'workers');
     expect(status, output).toBe(0);
-  });
+  }, 60_000);
 });

@@ -1,7 +1,8 @@
 # Contributing
 
-Talla is at design stage. There is no application code yet. This document describes how
-work will run once there is, and it is already binding on documentation changes.
+Talla is at design stage. The repository carries its foundation but no product behavior
+yet, so parts of this document describe work that has not started. It is binding on
+everything that has.
 
 Read [`CLAUDE.md`](CLAUDE.md) first. It carries the working rules. This file covers
 process.
@@ -56,20 +57,28 @@ recoverable by a follow-up commit:
 
 Every gate blocks merge. A gate that only warns is a gate that is ignored.
 
-| Gate | Fails when |
-|---|---|
-| Typecheck | Any type error |
-| Lint and format | Any violation |
-| Module boundaries | A module imports another module's internals |
-| Unit and property tests | Any failure |
-| `GarmentSpec` contract tests | Producer and consumer disagree on the schema |
-| RLS isolation test | Any tenant-scoped table lacks a policy, or a cross-tenant row is returned |
-| Secret scan | Any high severity finding |
-| Dependency audit | A known vulnerability at high severity or above |
-| Bundle size budget | The storefront critical path regresses past budget |
-| Asset budget | The over-budget garment fixture publishes successfully |
-| Golden image render | Perceptual difference beyond threshold on the reference garments |
-| Lighthouse | Any budget in spec 11.1 missed on the throttled reference profile |
+| Gate | Fails when | Live |
+|---|---|---|
+| Typecheck | Any type error | Yes |
+| Lint and format | Any violation | Yes |
+| Module boundaries | A module imports another module's internals | Yes |
+| Generated contracts current | Regenerating types or tokens changes a committed file | Yes |
+| Unit and property tests | Any failure | Yes |
+| `GarmentSpec` contract tests | Producer and consumer disagree on the schema | Yes |
+| Secret scan | Any high severity finding | Yes |
+| Dependency audit | A known vulnerability at high severity or above | Yes |
+| RLS isolation test | Any tenant-scoped table lacks a policy, or a cross-tenant row is returned | Phase 1 |
+| Asset budget | The over-budget garment fixture publishes successfully | Phase 1 |
+| Golden image render | Perceptual difference beyond threshold on the reference garments | Phase 1 |
+| Bundle size budget | The storefront critical path regresses past budget | Phase 1 |
+| Lighthouse | Any budget in spec 11.1 missed on the throttled reference profile | Phase 2 |
+
+A gate marked with a phase lands with the code it measures. It is listed here so the
+list stays the full set rather than only the convenient part, and the phase it belongs
+to is an exit criterion in
+[`docs/superpowers/plans/2026-09-06-build-phases.md`](docs/superpowers/plans/2026-09-06-build-phases.md).
+The commands the live gates run are the workspace scripts: `pnpm typecheck`, `pnpm
+lint`, `pnpm format:check`, `pnpm boundaries`, `pnpm test`, `pnpm generate`.
 
 If a gate blocks you and the gate is wrong, fix the gate in its own pull request. Never
 add a skip.

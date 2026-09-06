@@ -44,6 +44,15 @@ Each `modules/*` directory publishes one interface file. Everything else in it i
 internal. `packages/garment-spec` and `packages/tokens` publish generated contracts, not
 business behavior. This is enforced by an import-boundary linter in CI, not by discipline.
 
+**As built, after Phase F.** The workspace exists with the layout above, minus `apps/`,
+which arrives in Phase 1 with the Next.js work. `packages/garment-spec` exports the
+generated types from `.` and the Ajv validator from `./validate`, because the viewer
+runs in a browser and cannot read the schema from disk. `packages/errors` is a third
+generated-adjacent package: the error taxonomy as typed codes and copy. The module
+directories hold published interfaces and no behavior yet. Boundary rules live in
+[`.dependency-cruiser.cjs`](../../.dependency-cruiser.cjs) and are exercised against a
+planted violation, so the gate is known to catch something.
+
 ## Module contracts
 
 | Module | Consumes | Produces | Guarantees to callers |

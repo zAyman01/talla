@@ -1,0 +1,74 @@
+# Every gate here blocks merge. A gate that warns is a gate that is ignored (spec 16.4).
+#
+# The gates that need application code (RLS isolation, bundle size, asset budget,
+# golden image, Lighthouse) land with the code they measure. CONTRIBUTING.md says which
+# phase each one arrives in.
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, lint, boundaries, tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The contract is generated, never hand-written (spec 7). Regenerating must be a
+      # no-op; if it is not, someone edited the output or changed the source without
+      # regenerating.
+      - name: Generated contracts are current
+        run: |
+          pnpm generate
+          git diff --exit-code -- packages/garment-spec/src/generated packages/tokens/src/generated
+
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm boundaries
+      - run: pnpm test
+
+  secrets:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Full history, not just the diff: a secret committed and then removed is still
+      # a secret that was published.
+      - name: gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
+            detect --source=/repo --redact --no-banner --exit-code 1
+
+  dependencies:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level high
