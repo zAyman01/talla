@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // The only module that runs in a browser and the only one that may name a DOM type.
+    "lib": ["ES2023", "DOM"],
+    "types": []
+  },
+  "include": ["**/*.ts"]
+}

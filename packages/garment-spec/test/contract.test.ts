@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { validateGarmentSpec, schemaId } from '../src/index.ts';
+import { validateGarmentSpec, schemaId } from '../src/validate.ts';
 
 function fixture(name: string): unknown {
   return JSON.parse(

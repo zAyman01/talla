@@ -1,0 +1,19 @@
+{
+  "name": "@talla/styling",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@talla/garment-spec": "workspace:*",
+    "@talla/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}
