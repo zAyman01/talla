@@ -52,6 +52,12 @@ importers:
         specifier: ^5.9.2
         version: 5.9.3
 
+  packages/tokens:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
 packages:
 
   '@apidevtools/json-schema-ref-parser@11.9.3':
