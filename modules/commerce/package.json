@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@talla/shared": "workspace:*",
-    "@talla/tenancy": "workspace:*"
+    "@talla/tenancy": "workspace:*",
+    "@talla/database": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "@electric-sql/pglite": "^0.3.14"
   }
 }

@@ -32,3 +32,5 @@ export interface Understanding {
     previous?: GarmentSpec,
   ): Promise<Result<Understood, UnderstandingFailure>>;
 }
+
+export { preserveConfirmations, confirmFields } from './internal/confirmation.ts';

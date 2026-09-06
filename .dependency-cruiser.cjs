@@ -12,6 +12,12 @@
 module.exports = {
   forbidden: [
     {
+      name: 'no-app-into-module-internals',
+      severity: 'error',
+      from: { path: '(^|/)apps/' },
+      to: { path: '(^|/)modules/[^/]+/internal/' },
+    },
+    {
       name: 'no-cross-module-internals',
       comment:
         'A module is imported through its index.ts only. Everything under internal/ belongs to the module that owns it.',

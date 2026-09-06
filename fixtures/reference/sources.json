@@ -1,0 +1,24 @@
+[
+  {
+    "file": "tee-front.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:WLM_shirt_-_Female_(front).jpg",
+    "error": "Command '['curl', '--fail', '--silent', '--show-error', '--location', '--retry', '2', '--max-time', '50', 'https://upload.wikimedia.org/wikipedia/commons/8/86/WLM_shirt_-_Female_%28front%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original']' returned non-zero exit status 28."
+  },
+  {
+    "file": "tee-back.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:WLM_shirt_-_Female_(back).jpg",
+    "error": "Command '['curl', '--fail', '--silent', '--show-error', '--location', '--retry', '2', '--max-time', '50', 'https://upload.wikimedia.org/wikipedia/commons/9/96/WLM_shirt_-_Female_%28back%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original']' returned non-zero exit status 28."
+  },
+  {
+    "file": "jeans.jpg",
+    "sourcePage": "https://commons.wikimedia.org/wiki/File:Jeans.jpg",
+    "downloadUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5a/Jeans.jpg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original",
+    "author": "Oktaeder",
+    "license": "Public domain",
+    "sha256": "b316902ad85e8ff46b164ceb7f2c38d3c1424c9d789703e0267e3dfce68fbe1c",
+    "bytes": 100403,
+    "purpose": "reference-only",
+    "grayCard": false,
+    "storeTrialEligible": false
+  }
+]

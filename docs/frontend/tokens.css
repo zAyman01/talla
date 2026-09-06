@@ -103,6 +103,10 @@
   --radius-lg: 20px;     /* full-screen sheets */
   --radius-full: 9999px; /* pills, avatars */
 
+  --viewer-height: 36rem;
+  --viewer-min-height: 24rem;
+  --viewer-mobile-height: 28rem;
+
   --tap-min: 44px;       /* minimum interactive target */
 
   /* Documented scale. Never an arbitrary z-index in a component. */

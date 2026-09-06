@@ -65,3 +65,6 @@ export interface Commerce {
     traceId: TraceId,
   ): Promise<Result<Order, CommerceFailure>>;
 }
+
+export { createCheckout, normalizeLines, whatsappHandoff } from './internal/checkout.ts';
+export type { CheckoutInput, CheckoutDependencies, CheckoutReceipt, CheckoutService } from './internal/checkout.ts';

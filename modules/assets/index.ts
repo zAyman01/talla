@@ -52,3 +52,6 @@ export interface AssetPipeline {
     solved: SolvedGarment,
   ): Promise<Result<PublishedGarment, PublishFailure>>;
 }
+
+export { checkAssetBudget, assetKey } from './internal/budget.ts';
+export type { AssetBudgetInput, AssetBudgetResult } from './internal/budget.ts';
