@@ -55,3 +55,10 @@ export interface AssetPipeline {
 
 export { checkAssetBudget, assetKey } from './internal/budget.ts';
 export type { AssetBudgetInput, AssetBudgetResult } from './internal/budget.ts';
+export { publishBundle } from './internal/publish.ts';
+export type {
+  PackedFile,
+  PublishBundle,
+  PublishedBundle,
+  AssetStore,
+} from './internal/publish.ts';

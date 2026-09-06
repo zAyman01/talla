@@ -1,1 +1,20 @@
-{"name":"@talla/database","version":"0.0.0","private":true,"type":"module","exports":{".":"./src/index.ts"},"scripts":{"typecheck":"tsc -p tsconfig.json"},"dependencies":{"pg":"^8.16.3"},"devDependencies":{"@types/pg":"^8.15.5","@electric-sql/pglite":"^0.3.14","typescript":"^5.9.2"}}
+{
+  "name": "@talla/database",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.5",
+    "@electric-sql/pglite": "^0.3.14",
+    "typescript": "^5.9.2"
+  }
+}

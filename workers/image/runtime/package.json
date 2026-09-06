@@ -1,0 +1,8 @@
+{
+  "name": "talla-image-sandbox-runtime",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "sharp": "0.35.4"
+  }
+}

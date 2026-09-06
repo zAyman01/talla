@@ -94,6 +94,11 @@ re-shoot.
 
 ## Commerce, `ORDER_*`, `STOCK_*`
 
+`INGEST_INVALID_FILE` is returned by the isolated decoder for unsupported, malformed,
+oversized or animated files. Arabic: "تعذر قراءة الصورة بأمان." English: "The image could
+not be read safely." Recovery: upload a still JPEG, PNG or WebP under 12 MB and 16
+megapixels. Decoder diagnostics never cross the worker boundary.
+
 The buyer sees these, in Arabic, mid-purchase. They are the highest-stakes copy in the
 product.
 
@@ -102,6 +107,9 @@ product.
 | `STOCK_UNAVAILABLE` | هذا المقاس نفد للتو. | This size just sold out. | اختر مقاسًا آخر أو أزله وتابع. | Pick another size, or remove it and continue. |
 | `STOCK_INSUFFICIENT` | لم يتبقَ سوى جزء مما اخترته. | Only some of what you picked is left. | حدّثنا الكميات. راجع السلة وتابع. | We have updated the amounts. Check the cart and continue. |
 | `ORDER_PHONE_UNVERIFIED` | نحتاج إلى تأكيد رقمك أولًا. | We need to confirm your number first. | أدخل الرمز الذي أرسلناه إليك. | Enter the code we sent you. |
+| `ORDER_INVALID_INPUT` | بيانات الطلب غير مكتملة أو غير صالحة. | The order details are incomplete or invalid. | راجع القطع والكميات وبيانات التوصيل. | Check the items, quantities and delivery details. |
+| `ORDER_INVALID_STATE` | لا يمكن تغيير حالة الطلب بهذه الطريقة. | The order cannot move to that state. | راجع حالة الطلب الحالية وخطوة التوصيل. | Check the current order and delivery status. |
+| `ORDER_IDEMPOTENCY_CONFLICT` | تغير الطلب بعد محاولة إرساله. | The order changed after it was submitted. | راجع الطلب السابق قبل إنشاء طلب جديد. | Check the previous order before creating a new one. |
 | `ORDER_OTP_INVALID` | الرمز غير صحيح. | That code is not right. | راجع الرسالة وحاول مرة أخرى. | Check the message and try again. |
 | `ORDER_OTP_EXPIRED` | انتهت صلاحية الرمز. | That code has expired. | اطلب رمزًا جديدًا. | Ask for a new code. |
 | `ORDER_RATE_LIMITED` | حدثت محاولات كثيرة. | Too many attempts. | انتظر بضع دقائق ثم حاول مرة أخرى. | Wait a few minutes and try again. |

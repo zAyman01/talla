@@ -45,3 +45,6 @@ export type IngestRejection = Extract<ErrorCode, `INGEST_${string}`>;
 export interface Ingest {
   accept(upload: RawUpload): Promise<Result<ValidatedPhotoSet, IngestRejection>>;
 }
+
+export { sanitizeInSandbox } from './internal/sandbox.ts';
+export type { SanitizedImage } from './internal/sandbox.ts';

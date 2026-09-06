@@ -62,6 +62,12 @@ export type TokenName =
   | '--radius-md'
   | '--radius-lg'
   | '--radius-full'
+  | '--viewer-height'
+  | '--viewer-min-height'
+  | '--viewer-mobile-height'
+  | '--studio-light-color'
+  | '--studio-ground-color'
+  | '--content-max'
   | '--tap-min'
   | '--z-base'
   | '--z-sticky'
@@ -135,6 +141,12 @@ export const lightTokens: Readonly<Record<TokenName, string>> = Object.freeze({
   '--radius-md': "12px",
   '--radius-lg': "20px",
   '--radius-full': "9999px",
+  '--viewer-height': "36rem",
+  '--viewer-min-height': "24rem",
+  '--viewer-mobile-height': "28rem",
+  '--studio-light-color': "#ffffff",
+  '--studio-ground-color': "#777777",
+  '--content-max': "1200px",
   '--tap-min': "44px",
   '--z-base': "0",
   '--z-sticky': "10",

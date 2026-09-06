@@ -4,7 +4,10 @@ import fixture from '../../../packages/garment-spec/fixtures/valid-tee.json' wit
 import { confirmFields, preserveConfirmations } from '../index.ts';
 
 it('retains store changes and their confidence across model reruns', () => {
-  const previous = confirmFields(fixture as unknown as GarmentSpec, ['attributes.neckline', 'style']);
+  const previous = confirmFields(fixture as unknown as GarmentSpec, [
+    'attributes.neckline',
+    'style',
+  ]);
   const next = structuredClone(previous);
   next.fabric = 'linen';
   next.attributes.neckline = 'v';
@@ -19,6 +22,8 @@ it('retains store changes and their confidence across model reruns', () => {
 });
 it('rejects cross-tenant provenance and prototype paths', () => {
   const spec = fixture as unknown as GarmentSpec;
-  expect(() => preserveConfirmations({ ...spec, tenant_id: 'other' }, spec)).toThrow('identity');
+  expect(() => preserveConfirmations({ ...spec, tenant_id: 'other' }, spec)).toThrow(
+    'identity',
+  );
   expect(() => confirmFields(spec, ['__proto__.polluted'])).toThrow('Unsupported');
 });

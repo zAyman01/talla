@@ -26,6 +26,8 @@ export interface RankInput {
   readonly outfit?: readonly GarmentSpec[];
   /** Must already be filtered to selectedSize when supplied by commerce. */
   readonly selectedSize?: string;
+  /** Selected-size ranking requires this authoritative stock snapshot. */
+  readonly stockBySize?: ReadonlyMap<GarmentId, ReadonlyMap<string, number>>;
   readonly merchandisingPriority?: ReadonlyMap<GarmentId, number>;
 }
 
@@ -40,4 +42,3 @@ export interface Suggestion {
 export interface Styling {
   rank(input: RankInput): readonly Suggestion[];
 }
-

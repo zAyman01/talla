@@ -2,12 +2,28 @@
   {
     "file": "tee-front.jpg",
     "sourcePage": "https://commons.wikimedia.org/wiki/File:WLM_shirt_-_Female_(front).jpg",
-    "error": "Command '['curl', '--fail', '--silent', '--show-error', '--location', '--retry', '2', '--max-time', '50', 'https://upload.wikimedia.org/wikipedia/commons/8/86/WLM_shirt_-_Female_%28front%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original']' returned non-zero exit status 28."
+    "sha256": "8bcff4768467bc309c286d81dd121d7f88a0b11f760bd3a9a2c4c78e56f1ddef",
+    "bytes": 3603972,
+    "purpose": "reference-only",
+    "grayCard": false,
+    "storeTrialEligible": false,
+    "author": "Béria L. Rodríguez @ Wikimedia Commons",
+    "license": "CC-BY-SA-3.0",
+    "authorUrl": "https://commons.wikimedia.org/wiki/User:Beria",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
   },
   {
     "file": "tee-back.jpg",
     "sourcePage": "https://commons.wikimedia.org/wiki/File:WLM_shirt_-_Female_(back).jpg",
-    "error": "Command '['curl', '--fail', '--silent', '--show-error', '--location', '--retry', '2', '--max-time', '50', 'https://upload.wikimedia.org/wikipedia/commons/9/96/WLM_shirt_-_Female_%28back%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original']' returned non-zero exit status 28."
+    "sha256": "208b9631ffb441775c08b08969154ab80f4edb9eca8bf1d75bbdffb8553edca5",
+    "bytes": 3528034,
+    "purpose": "reference-only",
+    "grayCard": false,
+    "storeTrialEligible": false,
+    "author": "Béria L. Rodríguez @ Wikimedia Commons",
+    "license": "CC-BY-SA-3.0",
+    "authorUrl": "https://commons.wikimedia.org/wiki/User:Beria",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/"
   },
   {
     "file": "jeans.jpg",
@@ -19,6 +35,18 @@
     "bytes": 100403,
     "purpose": "reference-only",
     "grayCard": false,
+    "storeTrialEligible": false
+  },
+  {
+    "file": "mannequin.glb",
+    "sourcePage": "https://github.com/UMRAM-Bilkent/supine-human-model",
+    "downloadUrl": "https://raw.githubusercontent.com/UMRAM-Bilkent/supine-human-model/main/assets/human_posed.glb",
+    "author": "Quaternius; UMRAM, Bilkent University",
+    "license": "CC0-1.0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "sha256": "e0098c68b09fc10ec3e5bb29da8986de073c6915df29f14a99c3c22f99823b78",
+    "bytes": 162136,
+    "purpose": "reference-only",
     "storeTrialEligible": false
   }
 ]

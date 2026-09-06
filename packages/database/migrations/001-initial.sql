@@ -44,6 +44,7 @@ CREATE TABLE orders (
   cohort text NOT NULL CHECK (cohort IN ('control','viewer')),
   created_at timestamptz NOT NULL DEFAULT now(),
   fulfilled_at timestamptz,
+  cancelled_at timestamptz,
   PRIMARY KEY (tenant_id, id),
   UNIQUE (tenant_id, idempotency_key),
   UNIQUE (tenant_id, reference)
@@ -113,7 +114,14 @@ BEGIN RAISE EXCEPTION 'audit_log is append only'; END $$;
 CREATE TRIGGER immutable_audit BEFORE UPDATE OR DELETE ON audit_log FOR EACH ROW EXECUTE FUNCTION forbid_audit_mutation();
 
 -- Provision LOGIN/password out of band. No credential is committed.
-CREATE ROLE talla_app NOLOGIN NOSUPERUSER NOBYPASSRLS;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='talla_app') THEN
+    CREATE ROLE talla_app NOLOGIN NOSUPERUSER NOBYPASSRLS;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname='talla_app' AND (rolsuper OR rolbypassrls)) THEN
+    RAISE EXCEPTION 'talla_app must not bypass RLS';
+  END IF;
+END $$;
 GRANT USAGE ON SCHEMA public TO talla_app;
 GRANT SELECT ON tenants TO talla_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON garments, stock, orders, order_lines, pins, jobs TO talla_app;

@@ -11,3 +11,7 @@ packages/tokens/src/generated
 # The documentation predates the formatter and its wrapping is deliberate.
 docs
 *.md
+# Installed sandbox dependencies and generated app output
+workers/image/runtime/node_modules/
+apps/*/.next/
+apps/*/next-env.d.ts

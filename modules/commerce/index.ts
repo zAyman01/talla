@@ -67,4 +67,16 @@ export interface Commerce {
 }
 
 export { createCheckout, normalizeLines, whatsappHandoff } from './internal/checkout.ts';
-export type { CheckoutInput, CheckoutDependencies, CheckoutReceipt, CheckoutService } from './internal/checkout.ts';
+export type {
+  CheckoutInput,
+  CheckoutDependencies,
+  CheckoutReceipt,
+  CheckoutService,
+} from './internal/checkout.ts';
+export { transitionOrder } from './internal/order-state.ts';
+export type { OrderState } from './internal/order-state.ts';
+export {
+  exportBuyerOrders,
+  eraseBuyerContact,
+  applyRetention,
+} from './internal/privacy.ts';

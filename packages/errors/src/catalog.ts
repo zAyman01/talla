@@ -5,6 +5,19 @@ import type { ErrorEntry } from './types.ts';
  * every entry, and no em-dash anywhere a user can see one.
  */
 const catalog = {
+  INGEST_INVALID_FILE: {
+    audience: 'store',
+    httpStatus: 422,
+    retryable: true,
+    message: {
+      ar: 'تعذر قراءة الصورة بأمان.',
+      en: 'The image could not be read safely.',
+    },
+    fixAction: {
+      ar: 'ارفع صورة JPEG أو PNG أو WebP ثابتة، بحجم أقل من 12 ميجابايت و16 مليون بكسل.',
+      en: 'Upload a still JPEG, PNG or WebP under 12 MB and 16 megapixels.',
+    },
+  },
   // Ingest. The store owner sees these, and each must be fixable without support.
   INGEST_BACK_PHOTO_MISSING: {
     audience: 'store',
@@ -241,6 +254,37 @@ const catalog = {
       en: 'We need to confirm your number first.',
     },
     fixAction: { ar: 'أدخل الرمز الذي أرسلناه إليك.', en: 'Enter the code we sent you.' },
+  },
+  ORDER_INVALID_INPUT: {
+    audience: 'buyer',
+    httpStatus: 422,
+    retryable: true,
+    message: {
+      ar: 'بيانات الطلب غير مكتملة أو غير صالحة.',
+      en: 'The order details are incomplete or invalid.',
+    },
+    fixAction: {
+      ar: 'راجع القطع والكميات وبيانات التوصيل.',
+      en: 'Check the items, quantities and delivery details.',
+    },
+  },
+  ORDER_INVALID_STATE: {
+    audience:'store',httpStatus:409,retryable:false,
+    message:{ar:'لا يمكن تغيير حالة الطلب بهذه الطريقة.',en:'The order cannot move to that state.'},
+    fixAction:{ar:'راجع حالة الطلب الحالية وخطوة التوصيل.',en:'Check the current order and delivery status.'},
+  },
+  ORDER_IDEMPOTENCY_CONFLICT: {
+    audience: 'buyer',
+    httpStatus: 409,
+    retryable: true,
+    message: {
+      ar: 'تغير الطلب بعد محاولة إرساله.',
+      en: 'The order changed after it was submitted.',
+    },
+    fixAction: {
+      ar: 'راجع الطلب السابق قبل إنشاء طلب جديد.',
+      en: 'Check the previous order before creating a new one.',
+    },
   },
   ORDER_OTP_INVALID: {
     audience: 'buyer',

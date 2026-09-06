@@ -4,7 +4,6 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["test/**/*.ts", "*.config.ts", "*.config.js"],
-  // The planted violation is input to the boundary gate, not code that has to compile.
+  "include": ["test/**/*.ts", "*.config.ts", "*.config.js", "scripts/**/*.ts"],
   "exclude": ["test/fixtures/**"]
 }

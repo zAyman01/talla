@@ -106,6 +106,9 @@
   --viewer-height: 36rem;
   --viewer-min-height: 24rem;
   --viewer-mobile-height: 28rem;
+  --studio-light-color: #ffffff;
+  --studio-ground-color: #777777;
+  --content-max: 1200px;
 
   --tap-min: 44px;       /* minimum interactive target */
 
