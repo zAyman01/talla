@@ -80,3 +80,8 @@ export {
   eraseBuyerContact,
   applyRetention,
 } from './internal/privacy.ts';
+export { createPhoneVerification, verifyPhoneToken } from './internal/phone.ts';
+export type {
+  PhoneVerification,
+  PhoneVerificationDependencies,
+} from './internal/phone.ts';

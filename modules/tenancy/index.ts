@@ -32,3 +32,18 @@ export interface Tenancy {
    */
   withContext<T>(context: TenantContext, work: () => Promise<T>): Promise<T>;
 }
+
+export interface TenantRecord {
+  readonly tenantId: TenantId;
+  readonly subdomain: string;
+  readonly active: boolean;
+}
+
+export interface TenancyDependencies {
+  /** The platform registry lookup is deliberately outside a tenant transaction: the
+   * tenant is not known yet. Return only public routing state from this adapter. */
+  findBySubdomain(subdomain: string): Promise<TenantRecord | undefined>;
+  runWithTenant<T>(tenantId: TenantId, work: () => Promise<T>): Promise<T>;
+}
+
+export { createTenancy, subdomainFromHost } from './internal/resolve.ts';

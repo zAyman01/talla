@@ -8,9 +8,10 @@ const b = '22222222-2222-4222-8222-222222222222';
 const garment = '33333333-3333-4333-8333-333333333333';
 const db = new PGlite();
 beforeAll(async () => {
-  await db.exec(
-    await readFile(new URL('../migrations/001-initial.sql', import.meta.url), 'utf8'),
-  );
+  for (const migration of ['001-initial.sql', '002-phone-verification.sql'])
+    await db.exec(
+      await readFile(new URL(`../migrations/${migration}`, import.meta.url), 'utf8'),
+    );
   await db.query(
     "INSERT INTO tenants (id,subdomain,name_ar,name_en) VALUES ($1,'store-a','أ','A'),($2,'store-b','ب','B')",
     [a, b],
@@ -37,7 +38,7 @@ it('enumerates all tenant tables and requires RLS, FORCE RLS and policies', asyn
     FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
     WHERE n.nspname='public' AND c.relkind='r' AND EXISTS
       (SELECT 1 FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attname='tenant_id')`);
-  expect(rows.length).toBe(7);
+  expect(rows.length).toBe(8);
   for (const row of rows) {
     expect(row.relrowsecurity, row.tablename).toBe(true);
     expect(row.relforcerowsecurity, row.tablename).toBe(true);

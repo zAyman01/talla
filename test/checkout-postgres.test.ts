@@ -33,12 +33,13 @@ describe.skipIf(!url)('real PostgreSQL concurrency', () => {
     if (!new URL(url ?? '').pathname.endsWith('_test'))
       throw new Error('Integration tests require a database ending in _test');
     await control.query(`CREATE DATABASE "${databaseName}"`);
-    await migration.query(
-      await readFile(
-        new URL('../packages/database/migrations/001-initial.sql', import.meta.url),
-        'utf8',
-      ),
-    );
+    for (const file of ['001-initial.sql', '002-phone-verification.sql'])
+      await migration.query(
+        await readFile(
+          new URL(`../packages/database/migrations/${file}`, import.meta.url),
+          'utf8',
+        ),
+      );
     await migration.query('ALTER ROLE talla_app LOGIN');
     await migration.query(
       "INSERT INTO tenants(id,subdomain,name_ar,name_en) VALUES($1,'concurrency-test','اختبار','Test')",

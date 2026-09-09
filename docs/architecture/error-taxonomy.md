@@ -139,6 +139,7 @@ tells an attacker whether the number is registered.
 |---|---|---|---|---|
 | `AUTH_OTP_INVALID` | الرمز غير صحيح. | That code is not right. | راجع الرسالة وحاول مرة أخرى. | Check the message and try again. |
 | `AUTH_OTP_RATE_LIMITED` | حدثت محاولات كثيرة. | Too many attempts. | انتظر بضع دقائق ثم حاول مرة أخرى. | Wait a few minutes and try again. |
+| `AUTH_OTP_DELIVERY_FAILED` | تعذر إرسال رمز التأكيد الآن. | We could not send a verification code right now. | انتظر دقيقة ثم اطلب رمزاً جديداً. | Wait a minute, then ask for a new code. |
 | `AUTH_SESSION_EXPIRED` | انتهت الجلسة بسبب عدم النشاط. | Your session ended after a period of inactivity. | سجّل الدخول مرة أخرى للمتابعة. | Sign in again to continue. |
 | `AUTH_FORBIDDEN` | لا تملك صلاحية الوصول إلى هذه الصفحة. | You do not have access to this page. | ارجع إلى لوحة المتجر. | Go back to your store dashboard. |
 

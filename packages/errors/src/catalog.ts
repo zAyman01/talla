@@ -362,6 +362,19 @@ const catalog = {
       en: 'Wait a few minutes and try again.',
     },
   },
+  AUTH_OTP_DELIVERY_FAILED: {
+    audience: 'buyer',
+    httpStatus: 503,
+    retryable: true,
+    message: {
+      ar: 'تعذر إرسال رمز التأكيد الآن.',
+      en: 'We could not send a verification code right now.',
+    },
+    fixAction: {
+      ar: 'انتظر دقيقة ثم اطلب رمزاً جديداً.',
+      en: 'Wait a minute, then ask for a new code.',
+    },
+  },
   AUTH_SESSION_EXPIRED: {
     audience: 'store',
     httpStatus: 401,
