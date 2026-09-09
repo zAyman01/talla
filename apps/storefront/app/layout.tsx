@@ -18,8 +18,8 @@ const display = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'طلّة | مساحة الاختبار',
-  description: 'مساحة تطوير طلّة لمراجعة الصور والألوان والعرض ثلاثي الأبعاد.',
+  title: 'النسيج | متجر طلّة التجريبي',
+  description: 'واجهة طلّة التجريبية لبناء طلة من كتالوج متجر الملابس.',
   robots: { index: false, follow: false },
 };
 export default function Layout({ children }: { children: ReactNode }): ReactNode {
