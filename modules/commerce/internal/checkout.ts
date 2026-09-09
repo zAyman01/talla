@@ -124,7 +124,7 @@ export function createCheckout(deps: CheckoutDependencies): CheckoutService {
         .update(
           JSON.stringify({
             lines,
-            buyer: input.buyer,
+            phoneHash,
             total: input.expectedTotal,
             cohort: input.cohort,
           }),

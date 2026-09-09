@@ -96,18 +96,30 @@ export function Lab(): ReactNode {
     link.href = url;
     link.download = 'talla-reference-measurement.json';
     link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
   }
   return (
     <>
       <section className="workbench" aria-label="مراجعة الأصول">
         <div className="viewer-column">
           <div className="view-tabs" role="group" aria-label="نوع العرض">
-            <button aria-pressed={view === 'photo'} onClick={() => setView('photo')}>
+            <button
+              aria-pressed={view === 'photo'}
+              onClick={() => {
+                setView('photo');
+              }}
+            >
               <ImageIcon weight="regular" size={20} />
               صور القطعة
             </button>
-            <button aria-pressed={view === 'model'} onClick={() => setView('model')}>
+            <button
+              aria-pressed={view === 'model'}
+              onClick={() => {
+                setView('model');
+              }}
+            >
               <CubeIcon weight="regular" size={20} />
               اختبار المانيكان
             </button>
@@ -126,7 +138,9 @@ export function Lab(): ReactNode {
                 className="reference-photo"
                 src={reference.path}
                 alt={`${reference.name}، ${reference.detail}`}
-                onError={() => setFailed(true)}
+                onError={() => {
+                  setFailed(true);
+                }}
               />
             )}
           </div>

@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { assetKey, checkAssetBudget } from './budget.ts';
 
 export interface PackedFile {
@@ -27,6 +26,9 @@ export interface PublishedBundle {
   readonly solveSeconds: number;
 }
 export interface AssetStore {
+  /** Hashing is supplied by the runtime adapter so this module stays safe to import
+   * from browser packages without pulling a Node.js crypto implementation into them. */
+  sha256(bytes: Uint8Array): Promise<string>;
   /** A hash collision with different bytes must fail; an identical repeat is a no-op. */
   putImmutable(key: string, bytes: Uint8Array, contentType: string): Promise<void>;
 }
@@ -72,15 +74,17 @@ export async function publishBundle(
     gpuTextureTypes: ['image/ktx2'],
   });
   if (!gate.ok) throw new Error(gate.error);
-  const assets = input.files.map((file) => ({
-    file,
-    key: assetKey(
-      input.tenantId,
-      input.pipelineVersion,
-      createHash('sha256').update(file.bytes).digest('hex'),
-      file.extension,
-    ),
-  }));
+  const assets = await Promise.all(
+    input.files.map(async (file) => ({
+      file,
+      key: assetKey(
+        input.tenantId,
+        input.pipelineVersion,
+        await store.sha256(file.bytes),
+        file.extension,
+      ),
+    })),
+  );
   for (const { file, key } of assets)
     await store.putImmutable(
       key,

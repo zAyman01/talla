@@ -269,9 +269,17 @@ const catalog = {
     },
   },
   ORDER_INVALID_STATE: {
-    audience:'store',httpStatus:409,retryable:false,
-    message:{ar:'لا يمكن تغيير حالة الطلب بهذه الطريقة.',en:'The order cannot move to that state.'},
-    fixAction:{ar:'راجع حالة الطلب الحالية وخطوة التوصيل.',en:'Check the current order and delivery status.'},
+    audience: 'store',
+    httpStatus: 409,
+    retryable: false,
+    message: {
+      ar: 'لا يمكن تغيير حالة الطلب بهذه الطريقة.',
+      en: 'The order cannot move to that state.',
+    },
+    fixAction: {
+      ar: 'راجع حالة الطلب الحالية وخطوة التوصيل.',
+      en: 'Check the current order and delivery status.',
+    },
   },
   ORDER_IDEMPOTENCY_CONFLICT: {
     audience: 'buyer',

@@ -10,7 +10,15 @@ const sin = (degrees: number): number => Math.sin(degrees * rad);
 /** CIEDE2000, kL=kC=kH=1. Sharma, Wu, Dalal (2005), equations 2–22. */
 export function deltaE00(first: Lab, second: Lab): number {
   for (const c of [first, second]) {
-    if (![c.L, c.a, c.b].every(Number.isFinite) || c.L < 0 || c.L > 100 || c.a < -128 || c.a > 127 || c.b < -128 || c.b > 127)
+    if (
+      ![c.L, c.a, c.b].every(Number.isFinite) ||
+      c.L < 0 ||
+      c.L > 100 ||
+      c.a < -128 ||
+      c.a > 127 ||
+      c.b < -128 ||
+      c.b > 127
+    )
       throw new Error('Invalid CIELAB measurement');
   }
   const c1 = Math.hypot(first.a, first.b);

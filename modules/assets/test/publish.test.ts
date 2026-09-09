@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { expect, it } from 'vitest';
 import { publishBundle } from '../index.ts';
 import type { PublishBundle } from '../index.ts';
@@ -20,6 +21,8 @@ const input: PublishBundle = {
 it('counts real bytes and does not write anything when over budget', async () => {
   const writes: string[] = [];
   const store = {
+    sha256: (bytes: Uint8Array): Promise<string> =>
+      Promise.resolve(createHash('sha256').update(bytes).digest('hex')),
     putImmutable: (key: string): Promise<void> => {
       writes.push(key);
       return Promise.resolve();

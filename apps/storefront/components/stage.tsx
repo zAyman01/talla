@@ -87,12 +87,15 @@ export function Stage({
     function release(object: THREE.Object3D): void {
       object.traverse((node) => {
         if (node instanceof THREE.Mesh) {
-          node.geometry.dispose();
-          const materials = Array.isArray(node.material)
-            ? node.material
-            : [node.material];
+          const mesh = node as THREE.Mesh;
+          mesh.geometry.dispose();
+          const materials = Array.isArray(mesh.material)
+            ? mesh.material
+            : [mesh.material];
           for (const material of materials) {
-            for (const value of Object.values(material) as unknown[]) {
+            for (const value of Object.values(
+              material as unknown as Record<string, unknown>,
+            )) {
               if (value instanceof THREE.Texture) value.dispose();
             }
             material.dispose();
@@ -160,14 +163,24 @@ export function Stage({
       {!failed && (
         <div className="rotation-controls">
           <button
-            onClick={() => rotate.current(-Math.PI / 6)}
+            onClick={() => {
+              rotate.current(-Math.PI / 6);
+            }}
             aria-label="تدوير إلى اليسار"
           >
             ↶
           </button>
-          <button onClick={() => reset.current()}>إعادة العرض</button>
           <button
-            onClick={() => rotate.current(Math.PI / 6)}
+            onClick={() => {
+              reset.current();
+            }}
+          >
+            إعادة العرض
+          </button>
+          <button
+            onClick={() => {
+              rotate.current(Math.PI / 6);
+            }}
             aria-label="تدوير إلى اليمين"
           >
             ↷

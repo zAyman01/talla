@@ -168,6 +168,6 @@ it('exports contact only for the matching buyer, and erases it without deleting 
     expect(row?.['total']).toBe(25000);
     expect(row?.['buyer_ciphertext']).toBeNull();
     expect(row?.['buyer_phone_hash']).toMatch(/^deleted:/);
-    expect(row?.['request_hash']).toMatch(/^deleted:/);
+    expect(row?.['request_hash']).toMatch(/^[a-f0-9]{64}$/);
   });
 });

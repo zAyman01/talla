@@ -38,7 +38,7 @@ export async function eraseBuyerContact(
   if (!actorId) throw new Error('AUTH_FORBIDDEN');
   return database.tenant(tenantId, async (sql) => {
     const { rows } = await sql.query<{ id: string }>(
-      "UPDATE orders SET buyer_ciphertext=NULL,buyer_phone_hash='deleted:'||id::text,request_hash='deleted:'||id::text WHERE buyer_phone_hash=$1 RETURNING id",
+      "UPDATE orders SET buyer_ciphertext=NULL,buyer_phone_hash='deleted:'||id::text WHERE buyer_phone_hash=$1 RETURNING id",
       [privacy.phoneHash(phone)],
     );
     for (const row of rows)
@@ -58,7 +58,7 @@ export async function applyRetention(
     throw new Error('Invalid retention policy');
   return database.tenant(tenantId, async (sql) => {
     const { rows } = await sql.query<{ id: string }>(
-      "UPDATE orders SET buyer_ciphertext=NULL,buyer_phone_hash='deleted:'||id::text,request_hash='deleted:'||id::text WHERE buyer_ciphertext IS NOT NULL AND COALESCE(fulfilled_at,cancelled_at) < now()-($1 * interval '1 day') RETURNING id",
+      "UPDATE orders SET buyer_ciphertext=NULL,buyer_phone_hash='deleted:'||id::text WHERE buyer_ciphertext IS NOT NULL AND COALESCE(fulfilled_at,cancelled_at) < now()-($1 * interval '1 day') RETURNING id",
       [retentionDays],
     );
     for (const row of rows)

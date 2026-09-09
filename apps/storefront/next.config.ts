@@ -2,8 +2,8 @@ import type { NextConfig } from 'next';
 const config: NextConfig = {
   transpilePackages: ['@talla/trial', '@talla/tokens'],
   poweredByHeader: false,
-  async headers() {
-    return [
+  headers() {
+    return Promise.resolve([
       {
         source: '/:path*',
         headers: [
@@ -16,7 +16,7 @@ const config: NextConfig = {
           },
         ],
       },
-    ];
+    ]);
   },
 };
 export default config;
