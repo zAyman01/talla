@@ -2,6 +2,11 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
+    // DOM, because this project covers the gate tests and those run code inside a real
+    // browser through `page.evaluate` (ADR-0023). It is scoped to the files listed below
+    // and deliberately not in tsconfig.base.json: a server module that can see `document`
+    // is a server module that will eventually touch it.
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node"]
   },
   "include": ["test/**/*.ts", "*.config.ts", "*.config.js", "scripts/**/*.ts"],

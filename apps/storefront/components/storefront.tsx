@@ -17,6 +17,8 @@ import type { ReactNode } from 'react';
 import type { BodySize } from '@talla/shared';
 import type { FitVerdict } from '@talla/blocks';
 import { garmentFit } from '@talla/blocks';
+import { TIER_BUDGET, probeTier } from '@talla/viewer';
+import type { DeviceTier } from '@talla/shared';
 import type { DressedGarment } from '@talla/viewer';
 import type { CatalogProduct } from '../product.ts';
 
@@ -84,6 +86,20 @@ export function Storefront({
   const [cart, setCart] = useState<readonly ProductId[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [viewerAvailable, setViewerAvailable] = useState(true);
+  /**
+   * The device tier, decided before the renderer is fetched (spec 11.2).
+   *
+   * `undefined` means not decided yet, which is the state the server renders in: the
+   * probe reads a WebGL context and a connection, and neither exists there.
+   *
+   * The order matters more than it looks. Mounting the viewer and letting it report back
+   * that this device cannot run it costs a chunk of Three.js, a WebGL context and a
+   * render, all of it on the devices least able to afford any of the three, and only then
+   * starts loading the photographs a tier C buyer was always going to see. Asking first
+   * costs one synchronous probe. `probeTier` comes from the viewer module's index, which
+   * carries no renderer, so this decision does not drag the engine in with it.
+   */
+  const [tier, setTier] = useState<DeviceTier | undefined>(undefined);
   const cartDialog = useRef<HTMLDialogElement>(null);
 
   const outfit = useMemo(
@@ -120,10 +136,24 @@ export function Storefront({
     [outfit, size],
   );
 
+  /**
+   * Whether the figure is photographs rather than a render.
+   *
+   * Two ways to get here and one answer: a tier the ladder sends to the fallback, and a
+   * context the viewer had and lost. Deriving it once is what keeps the stage and the
+   * note beneath it from disagreeing about which of the two a buyer is looking at.
+   */
+  const photographic =
+    tier !== undefined && (!viewerAvailable || TIER_BUDGET[tier].usesTurntable);
+
   const unavailable = outfit.filter((product) => !product.sizes.includes(size));
   const orderable = outfit.filter((product) => product.sizes.includes(size));
   const outfitTotal = orderable.reduce((sum, product) => sum + product.price, 0);
   const cartTotal = cartItems.reduce((sum, product) => sum + product.price, 0);
+
+  useEffect(() => {
+    setTier(probeTier());
+  }, []);
 
   useEffect(() => {
     const dialog = cartDialog.current;
@@ -185,15 +215,20 @@ export function Storefront({
                   <span>اضغطي على بطاقة من الكتالوج تحت العرض.</span>
                 </div>
               </div>
-            ) : viewerAvailable ? (
-              <Mannequin
-                size={size}
-                garments={dressed}
-                onUnavailable={() => {
-                  setViewerAvailable(false);
-                }}
-              />
-            ) : (
+            ) : tier === undefined || photographic ? (
+              /**
+               * The photographs, and the first thing rendered.
+               *
+               * They are in the server's HTML, so the browser's preload scanner finds
+               * them before any JavaScript runs. The alternative, an empty stage until
+               * the tier is known, put the largest element on the page behind the whole
+               * client chain: bundle, hydrate, probe, then render, then fetch. That is
+               * 3.6 s on the throttled reference profile against a 2.5 s budget, and it
+               * is slowest on the tier C devices that never get anything else.
+               *
+               * On tier A and B the canvas replaces them once the renderer is ready, so
+               * they double as the poster frame for a viewer that is still loading.
+               */
               <div className="viewer-stage">
                 <div className="outfit-images">
                   {outfit.map((product) => (
@@ -204,15 +239,27 @@ export function Storefront({
                         height={product.imageHeight}
                         sizes="(max-width: 767px) 46vw, 24vw"
                         alt={product.name}
+                        // This is the viewer, for the buyers who cannot have one. It is
+                        // the largest element on their screen and the one the page is
+                        // waiting on, so it is never lazy.
+                        priority
                       />
                       <figcaption>{product.name}</figcaption>
                     </figure>
                   ))}
                 </div>
               </div>
+            ) : (
+              <Mannequin
+                size={size}
+                garments={dressed}
+                onUnavailable={() => {
+                  setViewerAvailable(false);
+                }}
+              />
             )}
 
-            {!viewerAvailable && outfit.length > 0 && (
+            {photographic && outfit.length > 0 && (
               <p className="viewer-note" role="status">
                 هذا الجهاز لا يشغّل العرض ثلاثي الأبعاد، لذلك تظهر صور القطع بدلاً منه.
                 القياسات تحت العرض لم تتغير.

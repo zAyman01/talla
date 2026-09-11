@@ -4,13 +4,13 @@ import localFont from 'next/font/local';
 import './globals.css';
 
 const ui = localFont({
-  src: '../fonts/IBMPlexSansArabic-Regular.ttf',
+  src: '../fonts/IBMPlexSansArabic-Regular.woff2',
   weight: '400',
   display: 'swap',
   variable: '--font-ui-loaded',
 });
 const display = localFont({
-  src: '../fonts/NotoNaskhArabic.ttf',
+  src: '../fonts/NotoNaskhArabic.woff2',
   weight: '400 700',
   display: 'swap',
   preload: false,

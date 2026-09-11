@@ -107,6 +107,45 @@ jobs:
           docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
             detect --source=/repo --redact --no-banner --exit-code 1
 
+  gates:
+    name: Browser gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # One driver for every gate that needs a browser (ADR-0023). `playwright-core` has
+      # no postinstall, so the download is an explicit step rather than a build script.
+      - name: Install the browser
+        run: pnpm exec playwright-core install --with-deps chromium chromium-headless-shell
+
+      # The gates measure the production images serving a seeded store, which is what
+      # `docker compose up` produces. Measuring a dev server would measure a build no
+      # buyer ever receives.
+      - name: Bring up the stack
+        run: |
+          cp .env.example .env
+          echo '127.0.0.1 nasij.localhost admin.localhost' | sudo tee -a /etc/hosts
+          docker compose up -d --wait
+          docker compose run --rm seed
+
+      - name: Accessibility and performance gates
+        env:
+          TALLA_GATE_URL: http://nasij.localhost:3000
+        run: pnpm gates
+
+      - name: The stack's own logs, when a gate fails
+        if: failure()
+        run: docker compose logs --no-log-prefix --tail 200
+
   dependencies:
     name: Dependency audit
     runs-on: ubuntu-latest

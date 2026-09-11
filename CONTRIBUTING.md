@@ -95,6 +95,18 @@ docker build -f workers/image/Dockerfile -t talla-image-worker:local .
 TALLA_TEST_IMAGE_SANDBOX=1 TALLA_TEST_DATABASE_URL=postgresql://postgres:local-development-only@localhost:5432/talla_test   pnpm test
 ```
 
+Three more gates need a browser and a running Talla (ADR-0023). They skip themselves
+without one, so they need the stack up and the browser installed:
+
+```
+pnpm exec playwright-core install chromium chromium-headless-shell
+cp .env.example .env && docker compose up -d --wait && docker compose run --rm seed
+TALLA_GATE_URL=http://nasij.localhost:3000 pnpm gates
+```
+
+They measure the production images serving a seeded store, not a dev server, because a
+dev server is a build no buyer ever receives.
+
 Migrations are forward-only, and that is now enforced rather than agreed: the runner
 records a checksum per applied migration, so editing one that has shipped stops the
 deployment and names the file. Write a new migration instead.

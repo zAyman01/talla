@@ -408,6 +408,10 @@ html {
     max(var(--space-6), calc((100vw - var(--content-max)) / 2));
   display: flex;
   align-items: center;
+  /* Wraps rather than overflows. At 200% text the store name, the environment badge and
+   * the cart do not fit one line on a 360px phone, and a header that refuses to wrap
+   * makes the whole page scroll sideways (spec 15). */
+  flex-wrap: wrap;
   gap: var(--space-4);
   border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--paper) 94%, transparent);
@@ -475,6 +479,9 @@ html {
   position: sticky;
   top: calc(var(--space-16) + var(--space-6));
   display: grid;
+  /* An auto track sizes to its widest child, and at 200% text the controls row is wider
+   * than the column it sits in. Naming the track keeps the panel inside its grid cell. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
   align-content: start;
 }
@@ -511,6 +518,7 @@ html {
 }
 .viewer-controls {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-2);
   direction: ltr;
@@ -525,12 +533,17 @@ html {
 .size-control {
   display: flex;
   align-items: center;
+  /* Wraps, for the same reason the header does. Six sizes and a label do not fit one
+   * line on a 360px phone at 200% text, and the segmented control is the widest thing
+   * in the panel (spec 15). */
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: var(--space-4);
   font-size: var(--text-xs);
 }
 .size-segmented {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   direction: ltr;
 }
@@ -714,6 +727,9 @@ html {
   color: var(--ink);
   box-shadow: var(--shadow-sm);
   font-size: var(--text-2xs);
+  /* The well clips its overflow, so an unconstrained badge loses its last word at large
+   * text sizes rather than wrapping. */
+  max-width: calc(100% - var(--space-3) * 2);
 }
 .product-copy {
   padding: var(--space-6);

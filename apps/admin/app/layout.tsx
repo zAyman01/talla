@@ -12,7 +12,7 @@ import './globals.css';
  * thing between the owner and a fast form.
  */
 const ui = localFont({
-  src: '../fonts/IBMPlexSansArabic-Regular.ttf',
+  src: '../fonts/IBMPlexSansArabic-Regular.woff2',
   weight: '400',
   display: 'swap',
   variable: '--font-ui-loaded',

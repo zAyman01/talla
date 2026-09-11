@@ -15,6 +15,7 @@
     "format:check": "prettier --check .",
     "format": "prettier --write .",
     "test": "vitest run",
+    "gates": "vitest run --config vitest.gates.config.ts",
     "boundaries": "depcruise modules packages workers apps --config .dependency-cruiser.cjs",
     "dev": "pnpm --parallel --filter @talla/storefront --filter @talla/admin dev",
     "build": "pnpm --filter @talla/storefront --filter @talla/admin build",
@@ -24,14 +25,18 @@
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "@types/node": "^24.5.2",
+    "@types/pg": "^8.15.5",
+    "axe-core": "^4.13.0",
     "dependency-cruiser": "^17.0.1",
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
+    "lighthouse": "^13.4.1",
+    "pg": "^8.16.3",
+    "playwright-core": "^1.63.0",
     "prettier": "^3.6.2",
+    "subset-font": "^2.7.0",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.44.1",
-    "vitest": "4.1.11",
-    "pg": "^8.16.3",
-    "@types/pg": "^8.15.5"
+    "vitest": "4.1.11"
   }
 }
