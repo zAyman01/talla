@@ -16,7 +16,8 @@
     "@talla/observability": "workspace:*",
     "@talla/shared": "workspace:*",
     "@talla/config": "workspace:*",
-    "@talla/sensitive": "workspace:*"
+    "@talla/sensitive": "workspace:*",
+    "@talla/commerce": "workspace:*"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.14",

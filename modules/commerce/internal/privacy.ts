@@ -1,8 +1,17 @@
 import type { Database, PrivacyBox } from '@talla/database';
 import { codedError } from '@talla/errors';
 
-/** Support-operated until owner authentication is integrated. Phone input must be
- * verified by the operator; these functions are never exposed as anonymous routes. */
+/**
+ * Support-operated until owner authentication is integrated. Phone input must be verified
+ * by the operator; these functions are never exposed as anonymous routes.
+ *
+ * **Every statement below is scoped by row-level security and by nothing else.** None of
+ * these queries carries a `tenant_id` in its WHERE clause, because `database.tenant` sets
+ * `app.current_tenant` and the policy does the rest. Run any of them on a connection that
+ * bypasses RLS and they operate on every store at once: `applyRetention` would erase the
+ * whole estate's buyers in one statement. The application role is NOSUPERUSER NOBYPASSRLS
+ * precisely so that cannot happen, and the tests run as that role for the same reason.
+ */
 export async function exportBuyerOrders(
   database: Database,
   privacy: PrivacyBox,

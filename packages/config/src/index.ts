@@ -45,6 +45,14 @@ export interface Config {
   readonly storefrontRootDomain: string;
   readonly asset: AssetStorageConfig;
   readonly otpChannel: OtpChannel;
+  /**
+   * Days after fulfilment or cancellation before a buyer's contact details are erased.
+   *
+   * Required, with no default, because spec 12.7 says to define the window before the
+   * first pilot and not after. A default would be Talla picking a store's retention
+   * policy for it and calling the decision made.
+   */
+  readonly retentionDays: number;
 }
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -110,6 +118,26 @@ export function readConfig(env: Env): Config {
     return bytes;
   };
 
+  /**
+   * A whole number inside a range, or a recorded problem.
+   *
+   * The bounds match `applyRetention`, which refuses anything outside them: a window of
+   * zero deletes a buyer's address before the courier reaches them, and one of several
+   * years is a retention policy in name only.
+   */
+  const wholeNumber = (name: string, least: number, most: number): number | undefined => {
+    const raw = present(name);
+    if (raw === undefined) return undefined;
+    const value = Number(raw);
+    if (!Number.isSafeInteger(value) || value < least || value > most) {
+      problems.push(
+        `${name} must be a whole number between ${String(least)} and ${String(most)}`,
+      );
+      return undefined;
+    }
+    return value;
+  };
+
   const hostname = (name: string): string | undefined => {
     const raw = present(name);
     if (raw === undefined) return undefined;
@@ -143,6 +171,8 @@ export function readConfig(env: Env): Config {
   const assetBucket = present('TALLA_ASSET_BUCKET');
   const assetAccessKey = present('TALLA_ASSET_ACCESS_KEY');
   const assetSecretKey = present('TALLA_ASSET_SECRET_KEY');
+
+  const retentionDays = wholeNumber('TALLA_RETENTION_DAYS', 1, 365);
 
   const otpRaw = present('TALLA_OTP_CHANNEL');
   const otpChannel = OTP_CHANNELS.find((candidate) => candidate === otpRaw);
@@ -201,7 +231,8 @@ export function readConfig(env: Env): Config {
     assetBucket === undefined ||
     assetAccessKey === undefined ||
     assetSecretKey === undefined ||
-    otpChannel === undefined
+    otpChannel === undefined ||
+    retentionDays === undefined
   ) {
     // Unreachable unless a reader above returned undefined without recording why. That
     // would be a silent hole in the gate, so it fails loudly rather than defaulting.
@@ -225,6 +256,7 @@ export function readConfig(env: Env): Config {
       secretKey: conceal(assetSecretKey),
     }),
     otpChannel,
+    retentionDays,
   });
 }
 

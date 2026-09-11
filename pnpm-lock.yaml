@@ -485,6 +485,9 @@ importers:
 
   workers/jobs:
     dependencies:
+      '@talla/commerce':
+        specifier: workspace:*
+        version: link:../../modules/commerce
       '@talla/config':
         specifier: workspace:*
         version: link:../../packages/config

@@ -75,12 +75,25 @@ Spec 11.1. The budgets are LCP under 2.5 s, CLS under 0.1, and the critical path
 Spec 16.3. A perceptual diff of the reference mannequin, so a change to the scene that
 nobody looks at cannot pass.
 
+**Deferred, 2026-09-12, with the reason.** A committed reference image has to be
+reproducible on every machine that runs the gate, and a headless browser draws through
+SwiftShader, whose output differs between Windows and Linux by more than a perceptual
+threshold can absorb without going blind to real changes. Making it reproducible means
+pinning a browser inside a container and rendering only there, which is a fixed Linux
+image and a second way to run a browser, against ADR-0023's whole point.
+
+It is worth that cost once there is something stable to photograph. Today the figure is
+the parametric stopgap of ADR-0018, which E2 and E4 replace outright, so every reference
+image committed now is thrown away with it. The geometry underneath is not unguarded in
+the meantime: `modules/blocks/test/mannequin.test.ts` already asserts topology, grading
+direction, determinism, and that cloth stays outside the body at every vertex.
+
 - [ ] Render through `createMannequinScene` directly rather than through the page. The
       page decides a device tier first, and a headless browser is a software rasteriser,
       which the ladder correctly sends to tier C. The gate measures the renderer; the
       ladder has its own tests.
 - [ ] A committed reference image per body size and garment set, with a perceptual
-      threshold rather than an exact match.
+      threshold rather than an exact match, rendered in a pinned container.
 - [ ] A failure writes the actual and the diff somewhere a human can look at them.
 
 ---
@@ -94,27 +107,40 @@ nobody looks at cannot pass.
 `applyRetention` is a function with no caller. A retention policy nothing executes is a
 policy that will be discovered during an audit.
 
-- [ ] A scheduled job that runs it per tenant, on the queue that already exists.
-- [ ] The retention window is configuration, not a literal.
-- [ ] It writes to the audit log, which `applyRetention` already does, and the run itself
-      is recorded so "it has not run since March" is answerable.
+- [x] A scheduled sweep that runs it per tenant. It runs on a clock in the jobs process
+      rather than on the queue: a queued job needs an enqueuer, and a sweep that only runs
+      when a job exists stops the first time the enqueuer is misconfigured.
+- [x] The retention window is configuration, and required with no default, because spec
+      12.7 says define it before the first pilot and a default is Talla deciding a store's
+      policy for it.
+- [x] It writes to the audit log, which `applyRetention` already does, and every sweep is
+      recorded including the ones that erase nothing. Without that row a store with no
+      expired orders is indistinguishable from a sweep that never reached it.
 
 ### O2. The data-subject path
 
 `exportBuyerOrders` and `eraseBuyerContact` exist and have no caller. Egypt PDPL 151/2020
 gives a buyer both rights, and a right with no operator path is a right on paper.
 
-- [ ] An operator command for each, refusing to run without an actor identity, because
+- [x] An operator command for each, refusing to run without an actor identity, because
       both write an audit row naming who did it.
-- [ ] Both exercised end to end against a real database, and the exercise recorded.
-- [ ] Buyer PII never reaches a log line on either path, including on failure (spec 16.5).
+- [x] Both exercised end to end against a real database on 2026-09-12: an order placed
+      through the real checkout, exported with name, phone and address, erasure refused
+      without an actor, erased with one, and the same export afterwards returning nothing.
+      The audit log carries the erasure against the operator who ran it.
+- [x] Buyer PII never reaches a log line on either path. The export is written to a file
+      the operator names and stdout carries a path and a count: a phone number echoed into
+      a terminal is a phone number in a shell history (spec 16.5).
 
 ### O3. The runbook and the restore drill
 
-- [ ] An incident runbook. Short: who is called, how a tenant is suspended, how a bad
-      publish is rolled back, how the stack is restored.
-- [ ] A documented backup and restore procedure, and a drill that has actually been run
-      with its result recorded. A backup that has never been restored is not a backup.
+- [x] An incident runbook: [`../../operations/runbook.md`](../../operations/runbook.md).
+      Every command in it has been run.
+- [x] A documented backup and restore procedure, and a drill run on 2026-09-12 with its
+      result in the runbook: row counts matched, row-level security came back enabled and
+      forced, and the migration ledger was intact. It also made one thing concrete, which
+      is that a dump taken before an erasure restores the erased details with everything
+      else, so a restore across one has to repeat it.
 
 ### O4. Named, and not engineering
 

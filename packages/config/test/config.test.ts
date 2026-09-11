@@ -22,6 +22,7 @@ const valid = (): Record<string, string> => ({
   TALLA_ASSET_ACCESS_KEY: 'AKIAEXAMPLE',
   TALLA_ASSET_SECRET_KEY: 'secret-access-key',
   TALLA_OTP_CHANNEL: 'log',
+  TALLA_RETENTION_DAYS: '90',
 });
 
 describe('readConfig', () => {
@@ -31,7 +32,23 @@ describe('readConfig', () => {
     expect(config.nodeEnv).toBe('test');
     expect(config.adminHost).toBe('admin.talla.app');
     expect(config.otpChannel).toBe('log');
+    expect(config.retentionDays).toBe(90);
     expect(reveal(config.encryptionKey)).toHaveLength(32);
+  });
+
+  it('refuses a retention window that is missing, fractional, or out of range', () => {
+    // Spec 12.7 says define the window before the first pilot. A process that starts
+    // without one has not defined it, and nobody discovers that until an audit.
+    const missing = valid();
+    delete missing['TALLA_RETENTION_DAYS'];
+    expect(() => readConfig(missing)).toThrow(/TALLA_RETENTION_DAYS is missing/);
+
+    for (const value of ['0', '366', '30.5', 'ninety', '-1']) {
+      const env = { ...valid(), TALLA_RETENTION_DAYS: value };
+      expect(() => readConfig(env), value).toThrow(
+        /TALLA_RETENTION_DAYS must be a whole number/,
+      );
+    }
   });
 
   it('defaults NODE_ENV to development rather than guessing production', () => {

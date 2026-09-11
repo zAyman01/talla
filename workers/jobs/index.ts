@@ -18,3 +18,5 @@ export {
   renewLease,
 } from './queue.ts';
 export type { FailureOutcome, JobStage, JobStatus, LeasedJob } from './queue.ts';
+export { createRetentionSweep } from './retention.ts';
+export type { RetentionSweep, RetentionSweepOptions, SweepResult } from './retention.ts';
