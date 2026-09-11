@@ -57,7 +57,7 @@ describe.skipIf(!url)('real PostgreSQL concurrency', () => {
     await control.end();
   });
   it('accepts only available stock under simultaneous buyers and leaves no partial orders', async () => {
-    const results = await Promise.allSettled(
+    const results = await Promise.all(
       Array.from({ length: 10 }, (_, i) =>
         checkout.place(tenant, {
           idempotencyKey: randomUUID(),
@@ -73,10 +73,13 @@ describe.skipIf(!url)('real PostgreSQL concurrency', () => {
         }),
       ),
     );
-    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(2);
-    for (const r of results)
-      if (r.status === 'rejected')
-        expect(r.reason).toEqual(new Error('STOCK_INSUFFICIENT'));
+    // Two units of stock, ten buyers, and the eight who lose say why they lost. A
+    // checkout failure is a value rather than a throw, so the count is of `ok` results:
+    // written the other way round this test passes on a service that oversells
+    // everything, which is what it did before it was first run.
+    expect(results.filter((result) => result.ok)).toHaveLength(2);
+    for (const result of results)
+      if (!result.ok) expect(result.error).toBe('STOCK_INSUFFICIENT');
     await database.tenant(tenant, async (sql) => {
       expect((await sql.query('SELECT quantity FROM stock')).rows[0]?.['quantity']).toBe(
         0,

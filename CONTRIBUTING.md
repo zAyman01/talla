@@ -82,6 +82,19 @@ The commands the live gates run are the workspace scripts: `pnpm typecheck`, `pn
 lint`, `pnpm format:check`, `pnpm boundaries`, `pnpm test`, `pnpm generate`, and
 `pnpm --filter @talla/database migrate` and `pnpm budget`.
 
+Four test files need more than Node: three want a real PostgreSQL, and one runs the
+image worker in its container. They skip themselves when the environment does not
+provide those, which is why a local `pnpm test` reports nine skipped and CI reports
+none. A suite that is green because it did not run is worse than a red one, so run the
+whole thing before opening a pull request:
+
+```
+docker compose up -d postgres
+docker exec talla-postgres-1 psql -U postgres -d talla_dev -c 'CREATE DATABASE talla_test'
+docker build -f workers/image/Dockerfile -t talla-image-worker:local .
+TALLA_TEST_IMAGE_SANDBOX=1 TALLA_TEST_DATABASE_URL=postgresql://postgres:local-development-only@localhost:5432/talla_test   pnpm test
+```
+
 Migrations are forward-only, and that is now enforced rather than agreed: the runner
 records a checksum per applied migration, so editing one that has shipped stops the
 deployment and names the file. Write a new migration instead.
