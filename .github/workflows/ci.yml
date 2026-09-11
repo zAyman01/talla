@@ -62,11 +62,35 @@ jobs:
       - name: Build the isolated image worker
         run: docker build -f workers/image/Dockerfile -t talla-image-worker:local .
 
+      # Both application images build from the repository root. A Dockerfile that only
+      # works on someone's laptop is a deploy that fails the first time it is needed.
+      - name: Build the application images
+        run: |
+          docker build -f apps/storefront/Dockerfile -t talla-storefront:local .
+          docker build -f apps/admin/Dockerfile -t talla-admin:local .
+
+      # The suite applies migrations through PGlite, which is not PostgreSQL 16. This
+      # runs the real CLI against the real server, and runs it twice: a second
+      # application that is not a no-op means the runner is not idempotent, and a
+      # deployment that re-runs on restart would fail on its second boot.
+      - name: Migrations apply cleanly to an empty database, twice
+        env:
+          TALLA_MIGRATION_DATABASE_URL: postgresql://postgres@localhost:5432/talla_migrations
+        run: |
+          psql postgresql://postgres@localhost:5432/postgres -c 'CREATE DATABASE talla_migrations'
+          pnpm --filter @talla/database migrate
+          pnpm --filter @talla/database migrate | tee "$RUNNER_TEMP/second-run.txt"
+          grep -q 'No pending migrations' "$RUNNER_TEMP/second-run.txt"
+
       - run: pnpm test
 
       - run: node scripts/prepare-references.ts
 
       - run: pnpm build
+
+      # The storefront ships Three.js. It is code split behind a dynamic import, and this
+      # is what proves it stays that way rather than drifting onto the critical path.
+      - run: pnpm budget
 
   secrets:
     name: Secret scan

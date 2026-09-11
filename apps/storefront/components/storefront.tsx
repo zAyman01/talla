@@ -9,62 +9,81 @@ import {
   PlusIcon,
   XIcon,
 } from '@phosphor-icons/react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import type { BodySize } from '@talla/shared';
+import type { FitVerdict } from '@talla/blocks';
+import { garmentFit } from '@talla/blocks';
+import type { DressedGarment } from './mannequin.tsx';
+import type { CatalogProduct } from '../product.ts';
 
-type ProductId = 'tee' | 'jeans';
-type Size = 'S' | 'M' | 'L' | 'XL';
+const Mannequin = dynamic(() => import('./mannequin.tsx').then((m) => m.Mannequin), {
+  ssr: false,
+  loading: () => <div className="viewer-stage stage-skeleton" aria-hidden="true" />,
+});
 
-interface Product {
-  readonly id: ProductId;
-  readonly name: string;
-  readonly category: 'top' | 'bottom';
-  readonly categoryLabel: string;
-  readonly image: string;
-  readonly imageWidth: number;
-  readonly imageHeight: number;
-  readonly price: number;
-  readonly sizes: readonly Size[];
+/**
+ * The catalogue arrives as a prop from the server component, read from PostgreSQL under
+ * the tenant transaction. It used to be a two-element array declared right here, which
+ * meant the page could not show a store anything it actually sells.
+ */
+type Product = CatalogProduct;
+type ProductId = string;
+
+const SIZES: readonly BodySize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
+const VERDICT_LABEL: Record<FitVerdict, string> = {
+  tight: 'ضيق',
+  fitted: 'مضبوط',
+  relaxed: 'مريح',
+  loose: 'واسع',
+};
+
+/** Where a reading was taken. A top's hem reading is a width, not a body point. */
+function pointLabel(slot: Product['slot'], key: string): string {
+  if (slot === 'top' && key === 'hip') return 'عرض الطرف';
+  if (key === 'chest') return 'الصدر';
+  if (key === 'waist') return 'الخصر';
+  if (key === 'hip') return 'الورك';
+  return 'الفخذ';
 }
 
-const products: readonly Product[] = [
-  {
-    id: 'tee',
-    name: 'تي شيرت بطبعة قطنية',
-    category: 'top',
-    categoryLabel: 'قطعة علوية',
-    image: '/references/tee-front.webp',
-    imageWidth: 1795,
-    imageHeight: 2048,
-    price: 65000,
-    sizes: ['S', 'M', 'L', 'XL'],
-  },
-  {
-    id: 'jeans',
-    name: 'جينز أزرق مستقيم',
-    category: 'bottom',
-    categoryLabel: 'قطعة سفلية',
-    image: '/references/jeans.webp',
-    imageWidth: 435,
-    imageHeight: 650,
-    price: 110000,
-    sizes: ['S', 'M', 'L'],
-  },
-] as const;
+/**
+ * Whether to quote the ease beside a reading.
+ *
+ * A top hangs from the chest, so the gap between its hem and the hip underneath is tens
+ * of centimetres by design. Printing that as ease reads as a fault rather than as a
+ * garment that does not cling, so the hem is quoted as a width and nothing else.
+ */
+function showsEase(slot: Product['slot'], key: string): boolean {
+  return !(slot === 'top' && key === 'hip');
+}
 
 function money(value: number): string {
   return `${new Intl.NumberFormat('en-US').format(value / 100)} ج.م`;
 }
 
-export function Storefront(): ReactNode {
+function centimetres(value: number): string {
+  return `${new Intl.NumberFormat('en-US').format(value)} سم`;
+}
+
+export function Storefront({
+  products,
+}: {
+  readonly products: readonly Product[];
+}): ReactNode {
+  // Everything the store sells is worn to begin with, so the first thing a buyer sees is
+  // a dressed figure rather than an empty one.
   const [chosen, setChosen] = useState<ReadonlySet<ProductId>>(
-    () => new Set<ProductId>(['tee']),
+    () => new Set<ProductId>(products.map((product) => product.id)),
   );
-  const [sizes, setSizes] = useState<Record<ProductId, Size>>({ tee: 'M', jeans: 'M' });
+  const [size, setSize] = useState<BodySize>('M');
   const [cart, setCart] = useState<readonly ProductId[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [viewerAvailable, setViewerAvailable] = useState(true);
   const cartDialog = useRef<HTMLDialogElement>(null);
 
   const outfit = useMemo(
@@ -75,7 +94,35 @@ export function Storefront(): ReactNode {
     () => products.filter((product) => cart.includes(product.id)),
     [cart],
   );
-  const outfitTotal = outfit.reduce((sum, product) => sum + product.price, 0);
+
+  /**
+   * Layering resolves by slot, outermost last. A top worn with a bottom is the `over`
+   * variant, solved against a body already carrying the bottom's thickness, so the hem
+   * falls past the waistband instead of through it (spec 8).
+   */
+  const dressed = useMemo<readonly DressedGarment[]>(() => {
+    const hasBottom = outfit.some((product) => product.slot === 'bottom');
+    return outfit.map((product) => ({
+      blockId: product.blockId,
+      colorHex: product.colorHex,
+      layer: product.slot === 'top' && hasBottom ? ('over' as const) : ('base' as const),
+      label: product.name,
+    }));
+  }, [outfit]);
+
+  /**
+   * Fit is always read at the base layer. The `over` variant carries the clearance a top
+   * needs to fall past a waistband, which is a rendering concern; quoting it would make a
+   * tee report a looser fit the moment a buyer adds jeans, and the tee has not changed.
+   */
+  const fits = useMemo(
+    () => outfit.map((product) => ({ product, fit: garmentFit(product.blockId, size) })),
+    [outfit, size],
+  );
+
+  const unavailable = outfit.filter((product) => !product.sizes.includes(size));
+  const orderable = outfit.filter((product) => product.sizes.includes(size));
+  const outfitTotal = orderable.reduce((sum, product) => sum + product.price, 0);
   const cartTotal = cartItems.reduce((sum, product) => sum + product.price, 0);
 
   useEffect(() => {
@@ -94,7 +141,7 @@ export function Storefront(): ReactNode {
   }
 
   function addOutfit(): void {
-    setCart(outfit.map((product) => product.id));
+    setCart(orderable.map((product) => product.id));
     setCartOpen(true);
   }
 
@@ -120,75 +167,126 @@ export function Storefront(): ReactNode {
 
       <main id="main" className="store-main">
         <section className="store-intro" aria-labelledby="catalog-title">
-          <div>
-            <p className="eyebrow">تجربة الطلة</p>
-            <h1 id="catalog-title">اختاري القطع وشاهديها معاً</h1>
-          </div>
+          <h1 id="catalog-title">شوفي القطع على المانيكان قبل الطلب</h1>
           <p>
-            هذه الواجهة تستخدم صور الاختبار المتاحة حالياً. عرض الملابس ثلاثي الأبعاد يفتح
-            بعد تصوير قطع متجر حقيقي وبناء الأصول المعتمدة.
+            اختاري القطع والمقاس، وسيعرض المانيكان الطلة كاملة مع القياس النهائي لكل قطعة.
           </p>
         </section>
 
         <div className="buyer-layout">
-          <section className="outfit-panel" aria-labelledby="outfit-title">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">المعاينة</p>
-                <h2 id="outfit-title">طلتك الآن</h2>
-              </div>
-              <span className="reference-label">
-                <InfoIcon size={18} weight="regular" />
-                صور مرجعية
-              </span>
-            </div>
+          <section className="viewer-panel" aria-labelledby="viewer-title">
+            <h2 id="viewer-title">طلتك على المانيكان</h2>
 
-            <div className="outfit-stage" aria-live="polite">
-              {outfit.length === 0 ? (
+            {outfit.length === 0 ? (
+              <div className="viewer-stage">
                 <div className="outfit-empty">
                   <CoatHangerIcon size={36} weight="regular" />
                   <strong>اختاري قطعة للبدء</strong>
-                  <span>اضغطي على بطاقة من الكتالوج.</span>
+                  <span>اضغطي على بطاقة من الكتالوج تحت العرض.</span>
                 </div>
-              ) : (
+              </div>
+            ) : viewerAvailable ? (
+              <Mannequin
+                size={size}
+                garments={dressed}
+                onUnavailable={() => {
+                  setViewerAvailable(false);
+                }}
+              />
+            ) : (
+              <div className="viewer-stage">
                 <div className="outfit-images">
                   {outfit.map((product) => (
-                    <figure
-                      key={product.id}
-                      className={`outfit-piece ${product.category}`}
-                    >
+                    <figure key={product.id} className={`outfit-piece ${product.slot}`}>
                       <Image
                         src={product.image}
                         width={product.imageWidth}
                         height={product.imageHeight}
-                        sizes="(max-width: 767px) 92vw, 48vw"
+                        sizes="(max-width: 767px) 46vw, 24vw"
                         alt={product.name}
                       />
                       <figcaption>{product.name}</figcaption>
                     </figure>
                   ))}
                 </div>
-              )}
+              </div>
+            )}
+
+            {!viewerAvailable && outfit.length > 0 && (
+              <p className="viewer-note" role="status">
+                هذا الجهاز لا يشغّل العرض ثلاثي الأبعاد، لذلك تظهر صور القطع بدلاً منه.
+                القياسات تحت العرض لم تتغير.
+              </p>
+            )}
+
+            <div className="size-control">
+              <span id="size-label">المقاس</span>
+              <div role="group" aria-labelledby="size-label" className="size-segmented">
+                {SIZES.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={size === option}
+                    onClick={() => {
+                      setSize(option);
+                    }}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="selection-summary">
-              <span>{outfit.length} من القطع في الطلة</span>
-              <strong>{money(outfitTotal)}</strong>
-            </div>
+            {fits.length > 0 && (
+              <div className="fit-readout" aria-live="polite">
+                <h3>القياس على مقاس {size}</h3>
+                <ul>
+                  {fits.map(({ product, fit }) => (
+                    <li key={product.id}>
+                      <p className="fit-headline">
+                        <strong>{product.name}</strong>
+                        <span className={`fit-verdict ${fit.verdict}`}>
+                          {VERDICT_LABEL[fit.verdict]}
+                        </span>
+                      </p>
+                      <dl>
+                        {fit.readings.map((reading) => (
+                          <div key={reading.key}>
+                            <dt>{pointLabel(product.slot, reading.key)}</dt>
+                            <dd>
+                              <span className="numeric">
+                                {centimetres(reading.garmentCm)}
+                              </span>
+                              {showsEase(product.slot, reading.key) && (
+                                <span className="muted">
+                                  زيادة {centimetres(reading.easeCm)}
+                                </span>
+                              )}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </li>
+                  ))}
+                </ul>
+                <p className="muted fit-basis">
+                  القياسات محسوبة من نموذج القطعة على جسم المانيكان، وليست من قطعة مصورة
+                  في متجر.
+                </p>
+              </div>
+            )}
           </section>
 
           <section className="catalog-panel" aria-labelledby="pieces-title">
             <div className="section-heading">
-              <div>
-                <p className="eyebrow">الكتالوج</p>
-                <h2 id="pieces-title">القطع المتاحة للاختبار</h2>
-              </div>
-              <span className="muted">2 قطعة</span>
+              <h2 id="pieces-title">القطع المتاحة</h2>
+              <span className="muted">{products.length} قطعة</span>
             </div>
 
             <div className="catalog-grid">
               {products.map((product) => {
                 const selected = chosen.has(product.id);
+                const stocked = product.sizes.includes(size);
                 return (
                   <article className="product-card" key={product.id}>
                     <button
@@ -216,30 +314,14 @@ export function Storefront(): ReactNode {
                       <span className="product-copy">
                         <span className="product-kind">{product.categoryLabel}</span>
                         <strong>{product.name}</strong>
-                        <span className="price">{money(product.price)}</span>
+                        <span className="price numeric">{money(product.price)}</span>
                       </span>
                     </button>
-                    <div className="size-row">
-                      <span>المقاس</span>
-                      <div role="group" aria-label={`مقاس ${product.name}`}>
-                        {product.sizes.map((size) => (
-                          <button
-                            key={size}
-                            aria-pressed={sizes[product.id] === size}
-                            onClick={() => {
-                              setSizes((current) => ({ ...current, [product.id]: size }));
-                            }}
-                          >
-                            {size}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {product.id === 'jeans' && (
-                      <p className="match-reason">
-                        يلائم التي شيرت لأن اللونين متوازنان.
-                      </p>
-                    )}
+                    <p className={stocked ? 'stock-line' : 'stock-line out'}>
+                      {stocked
+                        ? `متوفر بمقاس ${size}`
+                        : `غير متوفر بمقاس ${size}. المقاسات المتاحة: ${product.sizes.join('، ')}`}
+                    </p>
                   </article>
                 );
               })}
@@ -250,13 +332,22 @@ export function Storefront(): ReactNode {
 
       <div className="outfit-action">
         <div>
-          <span>{outfit.length} قطع</span>
-          <strong>{money(outfitTotal)}</strong>
+          <span>
+            {orderable.length} قطع بمقاس {size}
+          </span>
+          <strong className="numeric">{money(outfitTotal)}</strong>
         </div>
-        <button className="primary" onClick={addOutfit} disabled={outfit.length === 0}>
+        <button className="primary" onClick={addOutfit} disabled={orderable.length === 0}>
           أضيفي الطلة إلى السلة
         </button>
       </div>
+
+      {unavailable.length > 0 && (
+        <p className="availability-note" role="status">
+          {unavailable.map((product) => product.name).join('، ')} غير متاح بمقاس {size}،
+          لذلك لن يُضاف إلى السلة.
+        </p>
+      )}
 
       {cartOpen && (
         <dialog
@@ -272,10 +363,7 @@ export function Storefront(): ReactNode {
         >
           <div className="cart-sheet">
             <div className="cart-heading">
-              <div>
-                <p className="eyebrow">الطلب</p>
-                <h2>سلة التسوق</h2>
-              </div>
+              <h2>سلة التسوق</h2>
               <button
                 className="icon-button"
                 aria-label="إغلاق السلة"
@@ -307,8 +395,8 @@ export function Storefront(): ReactNode {
                       />
                       <div>
                         <strong>{product.name}</strong>
-                        <span>المقاس {sizes[product.id]}</span>
-                        <span className="price">{money(product.price)}</span>
+                        <span>المقاس {size}</span>
+                        <span className="price numeric">{money(product.price)}</span>
                       </div>
                       <div className="quantity" aria-label="الكمية">
                         <button aria-label="تقليل الكمية" disabled>
@@ -324,7 +412,7 @@ export function Storefront(): ReactNode {
                 </ul>
                 <div className="cart-total">
                   <span>الإجمالي</span>
-                  <strong>{money(cartTotal)}</strong>
+                  <strong className="numeric">{money(cartTotal)}</strong>
                 </div>
                 <div className="checkout-disabled">
                   <InfoIcon size={20} weight="regular" />
@@ -337,7 +425,7 @@ export function Storefront(): ReactNode {
                   تأكيد الهاتف وإتمام الطلب
                 </button>
                 <Link href="/lab" className="lab-link">
-                  افتح فحوصات الصور والنموذج
+                  افتح فحوصات الصور والأصول المرجعية
                 </Link>
               </>
             )}

@@ -67,10 +67,11 @@ Every gate blocks merge. A gate that only warns is a gate that is ignored.
 | `GarmentSpec` contract tests | Producer and consumer disagree on the schema | Yes |
 | Secret scan | Any high severity finding | Yes |
 | Dependency audit | A known vulnerability at high severity or above | Yes |
-| RLS isolation test | Any tenant-scoped table lacks a policy, or a cross-tenant row is returned | Phase 1 |
+| Migration apply | Migrations do not apply cleanly to an empty database, or a shipped migration's checksum changed | Yes |
+| RLS isolation test | Any tenant-scoped table lacks a policy, or a cross-tenant row is returned | Yes |
 | Asset budget | The over-budget garment fixture publishes successfully | Phase 1 |
 | Golden image render | Perceptual difference beyond threshold on the reference garments | Phase 1 |
-| Bundle size budget | The storefront critical path regresses past budget | Phase 1 |
+| Bundle size budget | The shared critical path of either application regresses past budget | Yes |
 | Lighthouse | Any budget in spec 11.1 missed on the throttled reference profile | Phase 2 |
 
 A gate marked with a phase lands with the code it measures. It is listed here so the
@@ -78,7 +79,12 @@ list stays the full set rather than only the convenient part, and the phase it b
 to is an exit criterion in
 [`docs/superpowers/plans/2026-09-06-build-phases.md`](docs/superpowers/plans/2026-09-06-build-phases.md).
 The commands the live gates run are the workspace scripts: `pnpm typecheck`, `pnpm
-lint`, `pnpm format:check`, `pnpm boundaries`, `pnpm test`, `pnpm generate`.
+lint`, `pnpm format:check`, `pnpm boundaries`, `pnpm test`, `pnpm generate`, and
+`pnpm --filter @talla/database migrate` and `pnpm budget`.
+
+Migrations are forward-only, and that is now enforced rather than agreed: the runner
+records a checksum per applied migration, so editing one that has shipped stops the
+deployment and names the file. Write a new migration instead.
 
 If a gate blocks you and the gate is wrong, fix the gate in its own pull request. Never
 add a skip.

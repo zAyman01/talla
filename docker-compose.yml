@@ -1,0 +1,111 @@
+# A working Talla from a clean clone:
+#
+#   cp .env.example .env && docker compose up --build
+#   docker compose run --rm seed
+#
+# Five services because that is what the system is (spec section 6): a web application,
+# an admin origin, PostgreSQL, and two workers. The image worker is not listed as a
+# service: it is spawned per upload with no network, which is the point of it.
+name: talla
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: local-development-only
+      POSTGRES_DB: talla_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d talla_dev']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Applies migrations once, then exits. Everything else waits for it to succeed, so no
+  # application ever starts against a schema that is behind it.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/storefront/Dockerfile
+      target: build
+    command: ['pnpm', '--filter', '@talla/database', 'migrate']
+    env_file: .env
+    environment:
+      TALLA_MIGRATION_DATABASE_URL: postgresql://postgres:local-development-only@postgres:5432/talla_dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # One store, two garments, stock, and an owner who can sign in. Run it by hand rather
+  # than on every boot: seeding is a development convenience, not part of starting up.
+  seed:
+    build:
+      context: .
+      dockerfile: apps/storefront/Dockerfile
+      target: build
+    command: ['node', 'scripts/seed-dev.ts']
+    env_file: .env
+    environment:
+      TALLA_MIGRATION_DATABASE_URL: postgresql://postgres:local-development-only@postgres:5432/talla_dev
+    profiles: ['tools']
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  storefront:
+    build:
+      context: .
+      dockerfile: apps/storefront/Dockerfile
+    env_file: .env
+    environment:
+      TALLA_DATABASE_URL: postgresql://postgres:local-development-only@postgres:5432/talla_dev
+      PORT: '3000'
+    ports:
+      - '3000:3000'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(\"http://127.0.0.1:3000/api/ready\").then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    env_file: .env
+    environment:
+      TALLA_DATABASE_URL: postgresql://postgres:local-development-only@postgres:5432/talla_dev
+      PORT: '3001'
+    ports:
+      - '3001:3001'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Drains the job queue. Separate from the web applications because a solve runs for
+  # minutes and must survive a deploy of the thing that enqueued it (ADR-0001).
+  jobs:
+    build:
+      context: .
+      dockerfile: apps/storefront/Dockerfile
+      target: build
+    command: ['pnpm', '--filter', '@talla/jobs-worker', 'start']
+    env_file: .env
+    environment:
+      TALLA_DATABASE_URL: postgresql://postgres:local-development-only@postgres:5432/talla_dev
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  postgres:

@@ -16,8 +16,10 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "boundaries": "depcruise modules packages workers apps --config .dependency-cruiser.cjs",
-    "dev": "pnpm --filter @talla/storefront dev",
-    "build": "pnpm --filter @talla/storefront build"
+    "dev": "pnpm --parallel --filter @talla/storefront --filter @talla/admin dev",
+    "build": "pnpm --filter @talla/storefront --filter @talla/admin build",
+    "budget": "node scripts/bundle-budget.ts storefront && node scripts/bundle-budget.ts admin",
+    "seed": "node scripts/seed-dev.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

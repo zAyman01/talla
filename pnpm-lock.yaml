@@ -42,11 +42,111 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@24.13.3)(vite@7.3.6(@types/node@24.13.3)(jiti@2.7.0)(lightningcss@1.32.0))
 
+  apps/admin:
+    dependencies:
+      '@talla/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@talla/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@talla/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@talla/http':
+        specifier: workspace:*
+        version: link:../../packages/http
+      '@talla/ingest':
+        specifier: workspace:*
+        version: link:../../modules/ingest
+      '@talla/jobs-worker':
+        specifier: workspace:*
+        version: link:../../workers/jobs
+      '@talla/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
+      '@talla/sensitive':
+        specifier: workspace:*
+        version: link:../../packages/sensitive
+      '@talla/shared':
+        specifier: workspace:*
+        version: link:../../modules/shared
+      '@talla/tenancy':
+        specifier: workspace:*
+        version: link:../../modules/tenancy
+      '@talla/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
+      '@talla/worker-image':
+        specifier: workspace:*
+        version: link:../../workers/image
+      next:
+        specifier: 16.3.4
+        version: 16.3.4(@types/node@24.13.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.8
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.8(react@19.2.8)
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.3.14
+        version: 0.3.16
+      '@tailwindcss/postcss':
+        specifier: ^4.1.13
+        version: 4.3.3
+      '@types/node':
+        specifier: ^24.5.2
+        version: 24.13.3
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.2.18
+      '@types/react-dom':
+        specifier: ^19.2.0
+        version: 19.2.7(@types/react@19.2.18)
+      tailwindcss:
+        specifier: ^4.1.13
+        version: 4.3.3
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
   apps/storefront:
     dependencies:
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@talla/blocks':
+        specifier: workspace:*
+        version: link:../../modules/blocks
+      '@talla/commerce':
+        specifier: workspace:*
+        version: link:../../modules/commerce
+      '@talla/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@talla/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@talla/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@talla/http':
+        specifier: workspace:*
+        version: link:../../packages/http
+      '@talla/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
+      '@talla/sensitive':
+        specifier: workspace:*
+        version: link:../../packages/sensitive
+      '@talla/shared':
+        specifier: workspace:*
+        version: link:../../modules/shared
+      '@talla/tenancy':
+        specifier: workspace:*
+        version: link:../../modules/tenancy
       '@talla/tokens':
         specifier: workspace:*
         version: link:../../packages/tokens
@@ -69,6 +169,9 @@ importers:
         specifier: ^5.0.8
         version: 5.0.15(@types/react@19.2.18)(react@19.2.8)
     devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.3.14
+        version: 0.3.16
       '@tailwindcss/postcss':
         specifier: ^4.1.13
         version: 4.3.3
@@ -119,6 +222,12 @@ importers:
       '@talla/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@talla/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@talla/sensitive':
+        specifier: workspace:*
+        version: link:../../packages/sensitive
       '@talla/shared':
         specifier: workspace:*
         version: link:../shared
@@ -183,10 +292,19 @@ importers:
 
   modules/tenancy:
     dependencies:
+      '@talla/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@talla/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@talla/shared':
         specifier: workspace:*
         version: link:../shared
     devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.3.14
+        version: 0.3.16
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
@@ -220,8 +338,21 @@ importers:
         specifier: ^5.9.2
         version: 5.9.3
 
+  packages/config:
+    dependencies:
+      '@talla/sensitive':
+        specifier: workspace:*
+        version: link:../sensitive
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
   packages/database:
     dependencies:
+      '@talla/sensitive':
+        specifier: workspace:*
+        version: link:../sensitive
       pg:
         specifier: ^8.16.3
         version: 8.23.0
@@ -254,6 +385,32 @@ importers:
       json-schema-to-typescript:
         specifier: ^15.0.4
         version: 15.0.4
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
+  packages/http:
+    dependencies:
+      '@talla/errors':
+        specifier: workspace:*
+        version: link:../errors
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
+  packages/observability:
+    dependencies:
+      '@talla/sensitive':
+        specifier: workspace:*
+        version: link:../sensitive
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
+  packages/sensitive:
+    devDependencies:
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
@@ -301,6 +458,34 @@ importers:
         specifier: 0.35.4
         version: 0.35.4(@types/node@24.13.3)
     devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
+  workers/jobs:
+    dependencies:
+      '@talla/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@talla/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@talla/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@talla/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
+      '@talla/sensitive':
+        specifier: workspace:*
+        version: link:../../packages/sensitive
+      '@talla/shared':
+        specifier: workspace:*
+        version: link:../../modules/shared
+    devDependencies:
+      '@electric-sql/pglite':
+        specifier: ^0.3.14
+        version: 0.3.16
       typescript:
         specifier: ^5.9.2
         version: 5.9.3
