@@ -420,17 +420,6 @@ html {
   text-decoration: none;
 }
 .demo-badge,
-.reference-label {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--space-8);
-  padding-inline: var(--space-3);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-full);
-  color: var(--ink-muted);
-  font-size: var(--text-xs);
-}
 .cart-trigger {
   margin-inline-start: auto;
   background: transparent;
@@ -478,13 +467,21 @@ html {
   gap: var(--space-8);
   align-items: start;
 }
-.outfit-panel,
+.viewer-panel,
 .catalog-panel {
   min-width: 0;
 }
-.outfit-panel {
+.viewer-panel {
   position: sticky;
   top: calc(var(--space-16) + var(--space-6));
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+.viewer-panel > h2 {
+  min-height: var(--space-12);
+  display: flex;
+  align-items: center;
 }
 .section-heading {
   min-height: var(--space-16);
@@ -496,13 +493,121 @@ html {
 .section-heading h2 {
   margin-top: var(--space-1);
 }
-.outfit-stage {
+/* The stage. Achromatic in both themes, radius 0, nothing decorative inside it.
+ * A tinted surround shifts a garment's perceived hue, and a refused parcel at the
+ * door costs more than a prettier panel is worth (docs/frontend/README.md 7). */
+.viewer-stage {
+  position: relative;
   min-height: var(--viewer-height);
   padding: var(--space-8);
   display: grid;
   place-items: center;
   overflow: hidden;
+  border-radius: var(--radius-none);
   background: var(--stage);
+}
+.stage-skeleton {
+  padding: 0;
+}
+.viewer-controls {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  direction: ltr;
+}
+.viewer-note {
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+/* Size. A segmented control, because changing size is a vertex blend with no network
+ * request and must never show a loading state (design-system.md, Viewer). */
+.size-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+}
+.size-segmented {
+  display: flex;
+  gap: var(--space-2);
+  direction: ltr;
+}
+.size-segmented button {
+  min-width: var(--tap-min);
+  padding: var(--space-2);
+}
+
+.fit-readout {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+  font-size: var(--text-xs);
+}
+.fit-readout h3 {
+  margin-bottom: var(--space-3);
+}
+.fit-readout ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-4);
+}
+.fit-headline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.fit-verdict {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+.fit-readout dl {
+  margin: var(--space-2) 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-2) var(--space-4);
+}
+.fit-readout dl > div {
+  display: grid;
+  gap: var(--space-1);
+}
+.fit-readout dt {
+  color: var(--ink-muted);
+}
+.fit-readout dd {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.fit-basis {
+  margin-top: var(--space-4);
+}
+.stock-line {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--line);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+.stock-line.out {
+  color: var(--danger);
+}
+.availability-note {
+  position: fixed;
+  inset-inline: 0;
+  inset-block-end: calc(var(--space-24) + env(safe-area-inset-bottom));
+  z-index: var(--z-sticky);
+  padding: var(--space-2) max(var(--space-6), calc((100vw - var(--content-max)) / 2));
+  background: var(--surface-sunken);
+  border-top: 1px solid var(--line);
+  color: var(--ink-muted);
+  font-size: var(--text-2xs);
+  text-align: end;
 }
 .outfit-empty,
 .cart-empty {
@@ -543,16 +648,7 @@ html {
   font-size: var(--text-2xs);
   color: var(--ink-muted);
 }
-.selection-summary {
-  min-height: var(--space-16);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-4);
-  border-bottom: 1px solid var(--line);
-  font-size: var(--text-xs);
-}
-.selection-summary strong,
+.numeric,
 .price,
 .cart-total strong {
   direction: ltr;
@@ -633,29 +729,6 @@ html {
 .product-copy .price {
   margin-top: var(--space-2);
   font-weight: var(--weight-heading);
-}
-.size-row {
-  padding: var(--space-4);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  border-top: 1px solid var(--line);
-  font-size: var(--text-xs);
-}
-.size-row > div {
-  display: flex;
-  gap: var(--space-2);
-  direction: ltr;
-}
-.size-row button {
-  min-width: var(--tap-min);
-  padding: var(--space-2);
-}
-.match-reason {
-  padding: 0 var(--space-4) var(--space-4);
-  color: var(--ink-muted);
-  font-size: var(--text-xs);
 }
 .outfit-action {
   position: fixed;
@@ -828,21 +901,29 @@ html {
   .cart-trigger > span {
     display: none;
   }
+  /* The viewer is the product, so the chrome above it is kept short enough that the
+   * figure is whole and on screen without scrolling. */
   .store-main {
-    padding: var(--space-6) var(--space-4) var(--space-12);
+    padding: var(--space-4) var(--space-4) var(--space-12);
   }
   .store-intro,
   .buyer-layout {
     grid-template-columns: 1fr;
-    gap: var(--space-6);
+    gap: var(--space-3);
+  }
+  .store-intro {
+    margin-bottom: var(--space-4);
   }
   .store-intro h1 {
-    font-size: var(--text-xl);
+    font-size: var(--text-lg);
   }
-  .outfit-panel {
+  .viewer-panel > h2 {
+    min-height: 0;
+  }
+  .viewer-panel {
     position: static;
   }
-  .outfit-stage {
+  .viewer-stage {
     min-height: var(--viewer-mobile-height);
     padding: var(--space-4);
   }
@@ -858,9 +939,10 @@ html {
   .product-copy strong {
     font-size: var(--text-sm);
   }
-  .size-row {
+  .size-control {
     align-items: flex-start;
     flex-direction: column;
+    gap: var(--space-2);
   }
   .outfit-action {
     padding-inline: var(--space-4);
@@ -884,4 +966,25 @@ html {
   .cart-sheet {
     animation: none;
   }
+}
+
+/* A host that names no store. Centred, quiet, and deliberately saying nothing about
+ * whether a store ever existed at this address (modules/tenancy). */
+.closed-store {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: var(--space-16) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: center;
+  text-align: center;
+  color: var(--ink-muted);
+}
+
+.closed-store h1 {
+  color: var(--ink);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-heading);
+  margin: 0;
 }

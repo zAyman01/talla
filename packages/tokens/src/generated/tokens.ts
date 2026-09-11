@@ -67,8 +67,11 @@ export type TokenName =
   | '--viewer-mobile-height'
   | '--studio-light-color'
   | '--studio-ground-color'
+  | '--mannequin'
   | '--content-max'
   | '--tap-min'
+  | '--focus-width'
+  | '--focus-offset'
   | '--z-base'
   | '--z-sticky'
   | '--z-header'
@@ -81,6 +84,7 @@ export type TokenName =
   | '--dur-exit'
   | '--dur-sheet'
   | '--dur-drape'
+  | '--dur-morph'
   | '--ease-enter'
   | '--ease-exit'
   | '--ease-move'
@@ -143,11 +147,14 @@ export const lightTokens: Readonly<Record<TokenName, string>> = Object.freeze({
   '--radius-full': "9999px",
   '--viewer-height': "36rem",
   '--viewer-min-height': "24rem",
-  '--viewer-mobile-height': "28rem",
+  '--viewer-mobile-height': "25rem",
   '--studio-light-color': "#ffffff",
   '--studio-ground-color': "#777777",
+  '--mannequin': "#d2d2ce",
   '--content-max': "1200px",
   '--tap-min': "44px",
+  '--focus-width': "2px",
+  '--focus-offset': "2px",
   '--z-base': "0",
   '--z-sticky': "10",
   '--z-header': "20",
@@ -160,6 +167,7 @@ export const lightTokens: Readonly<Record<TokenName, string>> = Object.freeze({
   '--dur-exit': "160ms",
   '--dur-sheet': "320ms",
   '--dur-drape': "380ms",
+  '--dur-morph': "200ms",
   '--ease-enter': "cubic-bezier(0.16, 1, 0.30, 1)",
   '--ease-exit': "cubic-bezier(0.40, 0, 1, 1)",
   '--ease-move': "cubic-bezier(0.65, 0, 0.35, 1)",
@@ -172,6 +180,7 @@ export const darkTokens: Readonly<Partial<Record<TokenName, string>>> = Object.f
   '--surface': "#1f2124",
   '--surface-sunken': "#131416",
   '--stage': "#2b2c2e",
+  '--mannequin': "#5b5e62",
   '--line': "#313336",
   '--line-strong': "#45484c",
   '--ink': "#f0f0ef",
@@ -200,5 +209,6 @@ export const reducedMotionTokens: Readonly<Partial<Record<TokenName, string>>> =
   '--dur-exit': "60ms",
   '--dur-sheet': "60ms",
   '--dur-drape': "0ms",
+  '--dur-morph': "0ms",
   '--stagger-grid': "0ms",
 });
