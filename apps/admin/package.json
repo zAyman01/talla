@@ -1,0 +1,38 @@
+{
+  "name": "@talla/admin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3001",
+    "build": "next build",
+    "start": "next start --hostname 127.0.0.1 --port 3001",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "next": "16.3.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "@talla/config": "workspace:*",
+    "@talla/database": "workspace:*",
+    "@talla/errors": "workspace:*",
+    "@talla/http": "workspace:*",
+    "@talla/ingest": "workspace:*",
+    "@talla/jobs-worker": "workspace:*",
+    "@talla/observability": "workspace:*",
+    "@talla/sensitive": "workspace:*",
+    "@talla/shared": "workspace:*",
+    "@talla/tenancy": "workspace:*",
+    "@talla/tokens": "workspace:*",
+    "@talla/worker-image": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@electric-sql/pglite": "^0.3.14",
+    "typescript": "^5.9.2",
+    "tailwindcss": "^4.1.13",
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/node": "^24.5.2"
+  }
+}

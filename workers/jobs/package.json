@@ -1,0 +1,25 @@
+{
+  "name": "@talla/jobs-worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "start": "node run.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@talla/database": "workspace:*",
+    "@talla/errors": "workspace:*",
+    "@talla/observability": "workspace:*",
+    "@talla/shared": "workspace:*",
+    "@talla/config": "workspace:*",
+    "@talla/sensitive": "workspace:*"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.14",
+    "typescript": "^5.9.2"
+  }
+}
