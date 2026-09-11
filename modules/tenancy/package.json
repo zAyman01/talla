@@ -10,9 +10,12 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@talla/shared": "workspace:*"
+    "@talla/shared": "workspace:*",
+    "@talla/database": "workspace:*",
+    "@talla/errors": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "@electric-sql/pglite": "^0.3.14"
   }
 }

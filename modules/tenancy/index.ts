@@ -47,3 +47,20 @@ export interface TenancyDependencies {
 }
 
 export { createTenancy, subdomainFromHost } from './internal/resolve.ts';
+
+/**
+ * Owner authentication lives here rather than in a module of its own because the thing
+ * it produces is the right to act as a tenant. `owner_tenants` is the membership join
+ * that answers "which tenant may this person become", which is the same question
+ * `resolve` answers from a host header, asked by a different surface (ADR-0022).
+ */
+export { createOwnerAuth } from './internal/owner.ts';
+export type {
+  AuthFailure,
+  CompletedLogin,
+  OwnerAuth,
+  OwnerAuthDependencies,
+  OwnerMembership,
+  OwnerSession,
+  StartedLogin,
+} from './internal/owner.ts';
