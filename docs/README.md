@@ -1,7 +1,12 @@
 # Documentation
 
-Talla is at design stage. The repository now carries its foundation: a workspace, the
-generated contracts, the module interfaces, and the CI gates. No product behavior yet.
+Talla is at design stage. The repository carries its foundation: a workspace, the generated
+contracts, the module interfaces, and the CI gates. It also carries a parametric mannequin
+the storefront dresses ([ADR-0018](decisions/0018-parametric-blocks-before-authored-ones.md)).
+
+What it does not yet carry is an application. There is no HTTP surface, no session, and no
+admin, so every module is a tested library with no caller. Closing that is Stage S of
+[the production roadmap](superpowers/specs/2026-09-11-production-roadmap-design.md).
 
 **The spec is the product source of truth.** The schema, token file, and accepted decision
 records are the implementation contracts that make it executable. Everything else here
@@ -29,6 +34,7 @@ Working rules for contributors are in [`../CLAUDE.md`](../CLAUDE.md). Process is
 docs/
   superpowers/specs/
     2026-09-04-talla-design.md   The spec. Source of truth. Sections 1 to 24.
+    2026-09-11-production-roadmap-design.md  What stands between here and a pilot store
 
   architecture/
     overview.md                  Repository layout, module contracts, trust boundaries
@@ -50,10 +56,12 @@ docs/
   superpowers/plans/
     2026-09-06-build-phases.md   Phase F to Phase 3, with the gate that ends each
     2026-09-06-phase-f-foundation.md  The foundation phase, task by task
+    2026-09-07-implementation-status.md  What is built, and what evidence is still owed
+    2026-09-11-stage-s-application-spine.md  Stage S, task by task
 
   decisions/
     README.md                    Index and format
-    0001 to 0015                 Accepted decisions
+    0001 to 0018                 Accepted decisions
 ```
 
 ## How these relate to the spec
@@ -69,6 +77,7 @@ docs/
 | 14 Motion | [`frontend/motion.md`](frontend/motion.md) |
 | 15 Accessibility | [`frontend/accessibility.md`](frontend/accessibility.md) |
 | 16 Engineering standards | [`../CLAUDE.md`](../CLAUDE.md), [`../CONTRIBUTING.md`](../CONTRIBUTING.md), [`architecture/error-taxonomy.md`](architecture/error-taxonomy.md) |
+| 22 Build order | [`superpowers/plans/`](superpowers/plans/), and [the production roadmap](superpowers/specs/2026-09-11-production-roadmap-design.md) for what remains |
 | 24 Decision log | [`decisions/`](decisions/) |
 
 ## Keeping these honest

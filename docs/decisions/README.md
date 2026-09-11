@@ -29,6 +29,11 @@ here.
 | [0014](0014-margin-nudge-cap.md) | The margin nudge is a tiebreak only, capped at one rank | Accepted |
 | [0015](0015-documentation-authority-and-contracts.md) | Documentation authority and executable contracts | Accepted |
 | [0016](0016-repository-tooling.md) | pnpm workspaces, Vitest, ESLint flat config, dependency-cruiser | Accepted |
+| [0017](0017-development-evidence-and-database-testing.md) | Development references stay separate from release evidence | Accepted |
+| [0018](0018-parametric-blocks-before-authored-ones.md) | The Block Library ships parametric geometry until an artist authors blocks | Accepted, superseded when authored blocks land |
+| [0019](0019-postgres-sessions-and-rate-limits.md) | Sessions and rate-limit counters live in PostgreSQL, not Redis | Accepted, revisited when the styling cache lands |
+| [0020](0020-sensitive-values-are-opaque.md) | Sensitive values are opaque wrappers, not branded strings | Accepted |
+| [0022](0022-owner-identity-is-platform-level.md) | Owner identity is platform level, and tenant membership is a join | Accepted |
 
 ## Format
 
