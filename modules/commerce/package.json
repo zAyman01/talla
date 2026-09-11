@@ -12,7 +12,9 @@
   "dependencies": {
     "@talla/shared": "workspace:*",
     "@talla/tenancy": "workspace:*",
-    "@talla/database": "workspace:*"
+    "@talla/database": "workspace:*",
+    "@talla/sensitive": "workspace:*",
+    "@talla/errors": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.9.2",

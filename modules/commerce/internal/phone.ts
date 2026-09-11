@@ -1,5 +1,6 @@
 import { createHmac, randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Database } from '@talla/database';
+import { codedError } from '@talla/errors';
 
 export interface PhoneVerificationDependencies {
   readonly database: Database;
@@ -51,15 +52,18 @@ function signPhoneToken(
   return `${payload}.${digest(secret, ['phone-token', payload])}`;
 }
 
+/**
+ * Takes the phone index, not the number. The token was minted against the same hash, so
+ * the plaintext adds nothing to the check and would only be one more place it lives.
+ */
 export function verifyPhoneToken(
   secret: Uint8Array,
-  phoneHash: (phone: string) => string,
   token: string,
-  phone: string,
+  phoneHash: string,
   tenantId: string,
   now = new Date(),
 ): boolean {
-  if (secret.byteLength < 32 || !phonePattern.test(phone)) return false;
+  if (secret.byteLength < 32 || !/^[a-f0-9]{64}$/.test(phoneHash)) return false;
   const [payload, signature, extra] = token.split('.');
   if (
     !payload ||
@@ -77,7 +81,7 @@ export function verifyPhoneToken(
     return (
       value['v'] === 1 &&
       value['tenantId'] === tenantId &&
-      value['phoneHash'] === phoneHash(phone) &&
+      value['phoneHash'] === phoneHash &&
       typeof value['expiresAt'] === 'number' &&
       Number.isSafeInteger(value['expiresAt']) &&
       value['expiresAt'] >= now.getTime()
@@ -99,7 +103,7 @@ export function createPhoneVerification(
   return {
     async start(tenantId, phone, ipAddress) {
       if (!phonePattern.test(phone) || !ipAddress.trim())
-        throw new Error('ORDER_INVALID_INPUT');
+        throw codedError('ORDER_INVALID_INPUT');
       const createdAt = now();
       const expiresAt = new Date(createdAt.getTime() + challengeLifetimeMs);
       const phoneHash = dependencies.phoneHash(phone);
@@ -120,7 +124,7 @@ export function createPhoneVerification(
           )
         ).rows[0];
         if ((result?.phone_count ?? 0) >= 5 || (result?.ip_count ?? 0) >= 10)
-          throw new Error('AUTH_OTP_RATE_LIMITED');
+          throw codedError('AUTH_OTP_RATE_LIMITED');
         await sql.query(
           `INSERT INTO phone_challenges
             (tenant_id,id,phone_hash,ip_hash,code_hash,expires_at,created_at)
@@ -138,7 +142,7 @@ export function createPhoneVerification(
             [now(), challengeId],
           );
         });
-        throw new Error('AUTH_OTP_DELIVERY_FAILED');
+        throw codedError('AUTH_OTP_DELIVERY_FAILED');
       }
       return { challengeId, expiresAt: expiresAt.toISOString() };
     },
@@ -149,7 +153,7 @@ export function createPhoneVerification(
         !phonePattern.test(phone) ||
         !/^\d{6}$/.test(code)
       )
-        throw new Error('ORDER_OTP_INVALID');
+        throw codedError('ORDER_OTP_INVALID');
       const verifiedAt = now();
       const phoneHash = dependencies.phoneHash(phone);
       await dependencies.database.tenant(tenantId, async (sql) => {
@@ -166,13 +170,13 @@ export function createPhoneVerification(
           )
         ).rows[0];
         if (!challenge || challenge.consumed_at || challenge.attempts >= 5)
-          throw new Error('ORDER_OTP_INVALID');
+          throw codedError('ORDER_OTP_INVALID');
         if (new Date(challenge.expires_at).getTime() < verifiedAt.getTime()) {
           await sql.query('UPDATE phone_challenges SET consumed_at=$1 WHERE id=$2', [
             verifiedAt,
             challengeId,
           ]);
-          throw new Error('ORDER_OTP_EXPIRED');
+          throw codedError('ORDER_OTP_EXPIRED');
         }
         const expected = digest(dependencies.secret, [challengeId, phoneHash, code]);
         if (
@@ -182,7 +186,7 @@ export function createPhoneVerification(
           await sql.query('UPDATE phone_challenges SET attempts=attempts+1 WHERE id=$1', [
             challengeId,
           ]);
-          throw new Error('ORDER_OTP_INVALID');
+          throw codedError('ORDER_OTP_INVALID');
         }
         await sql.query(
           'UPDATE phone_challenges SET attempts=attempts+1,consumed_at=$1 WHERE id=$2',

@@ -1,5 +1,9 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import type { Database, Sql } from '@talla/database';
+import type { Database, SealedBuyer, Sql } from '@talla/database';
+import { satisfies, type Sensitive } from '@talla/sensitive';
+import { codedError, isCodedError } from '@talla/errors';
+import type { ErrorCode } from '@talla/errors';
+import type { Result } from '@talla/shared';
 
 type Size = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
 interface Line {
@@ -7,10 +11,14 @@ interface Line {
   readonly size: Size;
   readonly quantity: number;
 }
+/**
+ * Concealed at the request boundary and never unwrapped here. The only thing that takes
+ * the plaintext out is the privacy box, which does it to encrypt it (ADR-0020).
+ */
 interface Buyer {
-  readonly name: string;
-  readonly phone: string;
-  readonly address: string;
+  readonly name: Sensitive<string>;
+  readonly phone: Sensitive<string>;
+  readonly address: Sensitive<string>;
 }
 export interface CheckoutInput {
   readonly idempotencyKey: string;
@@ -27,26 +35,65 @@ export interface CheckoutReceipt {
 }
 export interface CheckoutDependencies {
   readonly database: Database;
+  readonly sealBuyer: (buyer: Buyer, tenantId: string) => SealedBuyer;
+  /**
+   * Takes the phone index, not the number. The token was minted against the same hash,
+   * so the plaintext buys nothing here and would only be one more place it exists.
+   */
   readonly verifyPhone: (
     token: string,
-    phone: string,
+    phoneHash: string,
     tenantId: string,
   ) => Promise<boolean>;
-  readonly sealBuyer: (buyer: Buyer, tenantId: string) => string;
-  readonly phoneHash: (phone: string) => string;
 }
+export interface PricedLines {
+  readonly total: number;
+  readonly lines: readonly (Line & { unitPrice: number })[];
+}
+
+/** Everything a buyer can be told about a checkout, and nothing else. */
+export type CheckoutFailure = Extract<ErrorCode, `ORDER_${string}` | `STOCK_${string}`>;
+
 export interface CheckoutService {
   quote(
     tenantId: string,
     lines: readonly Line[],
-  ): Promise<{ total: number; lines: readonly (Line & { unitPrice: number })[] }>;
-  place(tenantId: string, input: CheckoutInput): Promise<CheckoutReceipt>;
+  ): Promise<Result<PricedLines, CheckoutFailure>>;
+  place(
+    tenantId: string,
+    input: CheckoutInput,
+  ): Promise<Result<CheckoutReceipt, CheckoutFailure>>;
+}
+
+const CHECKOUT_CODE = /^(?:ORDER|STOCK)_/;
+
+/**
+ * Turn a thrown failure into a `Result`, and let everything else keep throwing.
+ *
+ * Only codes this service is allowed to produce are converted. Anything else, a driver
+ * failure or a programmer-error invariant, propagates: collapsing a bug into a typed
+ * failure hides it from a caller who would then retry it forever, and the HTTP layer is
+ * the place that turns an unrecognised throw into `INTERNAL_ERROR` with a trace id.
+ *
+ * The throw itself stays because work inside `database.tenant` must throw to roll the
+ * transaction back. Returning a failure from in there would commit it.
+ */
+async function asResult<T>(work: () => Promise<T>): Promise<Result<T, CheckoutFailure>> {
+  try {
+    return { ok: true, value: await work() };
+  } catch (error) {
+    if (isCodedError(error) && CHECKOUT_CODE.test(error.code)) {
+      // Narrowed by the guard above: the pattern is the runtime half of the type.
+      return { ok: false, error: error.code as CheckoutFailure };
+    }
+    throw error;
+  }
 }
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const sizes: readonly string[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 export function normalizeLines(lines: readonly Line[]): readonly Line[] {
-  if (lines.length === 0 || lines.length > 30) throw new Error('ORDER_INVALID_INPUT');
+  if (lines.length === 0 || lines.length > 30) throw codedError('ORDER_INVALID_INPUT');
   const merged = new Map<string, Line>();
   for (const line of lines) {
     if (
@@ -56,10 +103,10 @@ export function normalizeLines(lines: readonly Line[]): readonly Line[] {
       line.quantity < 1 ||
       line.quantity > 10
     )
-      throw new Error('ORDER_INVALID_INPUT');
+      throw codedError('ORDER_INVALID_INPUT');
     const key = `${line.garmentId.toLowerCase()}:${line.size}`;
     const quantity = (merged.get(key)?.quantity ?? 0) + line.quantity;
-    if (quantity > 10) throw new Error('ORDER_INVALID_INPUT');
+    if (quantity > 10) throw codedError('ORDER_INVALID_INPUT');
     merged.set(key, {
       garmentId: line.garmentId.toLowerCase(),
       size: line.size,
@@ -90,138 +137,142 @@ async function quote(
       )
     ).rows[0];
     if (!garment || !stock || stock.quantity < line.quantity)
-      throw new Error('STOCK_INSUFFICIENT');
+      throw codedError('STOCK_INSUFFICIENT');
     priced.push({ ...line, unitPrice: garment.price });
   }
   const total = priced.reduce((sum, line) => sum + line.quantity * line.unitPrice, 0);
   if (!Number.isSafeInteger(total) || total <= 0 || total > 2_147_483_647)
-    throw new Error('ORDER_INVALID_INPUT');
+    throw codedError('ORDER_INVALID_INPUT');
   return { total, lines: priced };
 }
 
 export function createCheckout(deps: CheckoutDependencies): CheckoutService {
   return {
     quote: (tenantId, lines) =>
-      deps.database.tenant(tenantId, (sql) => quote(sql, normalizeLines(lines))),
-    async place(tenantId, input): Promise<CheckoutReceipt> {
-      const lines = normalizeLines(input.lines);
-      if (
-        !uuid.test(input.idempotencyKey) ||
-        !Number.isSafeInteger(input.expectedTotal) ||
-        input.expectedTotal <= 0 ||
-        !/^\+[1-9]\d{7,14}$/.test(input.buyer.phone) ||
-        input.buyer.name.trim().length < 2 ||
-        input.buyer.name.length > 120 ||
-        input.buyer.address.trim().length < 10 ||
-        input.buyer.address.length > 500 ||
-        !['viewer', 'control'].includes(input.cohort)
-      )
-        throw new Error('ORDER_INVALID_INPUT');
-      if (!(await deps.verifyPhone(input.phoneToken, input.buyer.phone, tenantId)))
-        throw new Error('ORDER_PHONE_UNVERIFIED');
-      const phoneHash = deps.phoneHash(input.buyer.phone);
-      const requestHash = createHash('sha256')
-        .update(
-          JSON.stringify({
-            lines,
-            phoneHash,
-            total: input.expectedTotal,
-            cohort: input.cohort,
-          }),
-        )
-        .digest('hex');
-      return deps.database.tenant(tenantId, async (sql) => {
-        // Serialize duplicate submissions and orders for one phone before any stock lock.
-        await sql.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
-          `${tenantId}:${phoneHash}`,
-        ]);
-        await sql.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
-          `${tenantId}:${input.idempotencyKey}`,
-        ]);
-        const existing = (
-          await sql.query<{
-            id: string;
-            reference: string;
-            total: number;
-            request_hash: string;
-          }>(
-            'SELECT id,reference,total,request_hash FROM orders WHERE idempotency_key=$1',
-            [input.idempotencyKey],
-          )
-        ).rows[0];
-        if (existing) {
-          if (existing.request_hash !== requestHash)
-            throw new Error('ORDER_IDEMPOTENCY_CONFLICT');
-          return {
-            id: existing.id,
-            reference: existing.reference,
-            total: existing.total,
-          };
-        }
-        const recent = (
-          await sql.query<{ count: number }>(
-            "SELECT count(*)::int AS count FROM orders WHERE buyer_phone_hash=$1 AND created_at > now()-interval '24 hours'",
-            [phoneHash],
-          )
-        ).rows[0];
-        if ((recent?.count ?? 0) >= 3) throw new Error('ORDER_RATE_LIMITED');
-        const priced = await quote(sql, lines);
-        if (priced.total !== input.expectedTotal) throw new Error('ORDER_TOTAL_MISMATCH');
-        const receipt = {
-          id: randomUUID(),
-          reference: randomBytes(12).toString('hex').toUpperCase(),
-          total: priced.total,
-        };
-        await sql.query(
-          `INSERT INTO orders (tenant_id,id,idempotency_key,request_hash,reference,total,buyer_ciphertext,buyer_phone_hash,cohort)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-          [
-            tenantId,
-            receipt.id,
-            input.idempotencyKey,
-            requestHash,
-            receipt.reference,
-            receipt.total,
-            deps.sealBuyer(input.buyer, tenantId),
-            phoneHash,
-            input.cohort,
-          ],
-        );
-        for (const line of priced.lines) {
-          await sql.query(
-            'UPDATE stock SET quantity=quantity-$1 WHERE garment_id=$2 AND size=$3',
-            [line.quantity, line.garmentId, line.size],
-          );
-          await sql.query('UPDATE garments SET stock_epoch=stock_epoch+1 WHERE id=$1', [
-            line.garmentId,
-          ]);
-          await sql.query(
-            'INSERT INTO order_lines (tenant_id,order_id,garment_id,size,quantity,unit_price) VALUES ($1,$2,$3,$4,$5,$6)',
-            [
-              tenantId,
-              receipt.id,
-              line.garmentId,
-              line.size,
-              line.quantity,
-              line.unitPrice,
-            ],
-          );
-        }
-        await sql.query(
-          "INSERT INTO audit_log (tenant_id,actor_id,action,entity_id,details) VALUES ($1,'buyer','order.placed',$2,$3)",
-          [
-            tenantId,
-            receipt.id,
-            JSON.stringify({
-              total: receipt.total,
-              itemCount: lines.reduce((n, l) => n + l.quantity, 0),
-            }),
-          ],
-        );
-        return receipt;
-      });
-    },
+      asResult(() =>
+        deps.database.tenant(tenantId, (sql) => quote(sql, normalizeLines(lines))),
+      ),
+    place: (tenantId, input) => asResult(() => placeOrder(deps, tenantId, input)),
   };
+}
+
+async function placeOrder(
+  deps: CheckoutDependencies,
+  tenantId: string,
+  input: CheckoutInput,
+): Promise<CheckoutReceipt> {
+  const lines = normalizeLines(input.lines);
+  if (
+    !uuid.test(input.idempotencyKey) ||
+    !Number.isSafeInteger(input.expectedTotal) ||
+    input.expectedTotal <= 0 ||
+    // `satisfies` runs the check against the concealed value and hands back only a
+    // boolean, so validating a buyer does not become a third place the plaintext
+    // escapes to.
+    !satisfies(input.buyer.phone, (p) => /^\+[1-9]\d{7,14}$/.test(p)) ||
+    !satisfies(input.buyer.name, (n) => n.trim().length >= 2 && n.length <= 120) ||
+    !satisfies(input.buyer.address, (a) => a.trim().length >= 10 && a.length <= 500) ||
+    !['viewer', 'control'].includes(input.cohort)
+  )
+    throw codedError('ORDER_INVALID_INPUT');
+  // Sealed once, up front: the ciphertext and the phone index come from the same
+  // values, and doing it here means nothing below this line needs the buyer at all.
+  const sealed = deps.sealBuyer(input.buyer, tenantId);
+  const phoneHash = sealed.phoneHash;
+  if (!(await deps.verifyPhone(input.phoneToken, phoneHash, tenantId)))
+    throw codedError('ORDER_PHONE_UNVERIFIED');
+  const requestHash = createHash('sha256')
+    .update(
+      JSON.stringify({
+        lines,
+        phoneHash,
+        total: input.expectedTotal,
+        cohort: input.cohort,
+      }),
+    )
+    .digest('hex');
+  return deps.database.tenant(tenantId, async (sql) => {
+    // Serialize duplicate submissions and orders for one phone before any stock lock.
+    await sql.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
+      `${tenantId}:${phoneHash}`,
+    ]);
+    await sql.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
+      `${tenantId}:${input.idempotencyKey}`,
+    ]);
+    const existing = (
+      await sql.query<{
+        id: string;
+        reference: string;
+        total: number;
+        request_hash: string;
+      }>('SELECT id,reference,total,request_hash FROM orders WHERE idempotency_key=$1', [
+        input.idempotencyKey,
+      ])
+    ).rows[0];
+    if (existing) {
+      if (existing.request_hash !== requestHash)
+        throw codedError('ORDER_IDEMPOTENCY_CONFLICT');
+      return {
+        id: existing.id,
+        reference: existing.reference,
+        total: existing.total,
+      };
+    }
+    const recent = (
+      await sql.query<{ count: number }>(
+        "SELECT count(*)::int AS count FROM orders WHERE buyer_phone_hash=$1 AND created_at > now()-interval '24 hours'",
+        [phoneHash],
+      )
+    ).rows[0];
+    if ((recent?.count ?? 0) >= 3) throw codedError('ORDER_RATE_LIMITED');
+    const priced = await quote(sql, lines);
+    if (priced.total !== input.expectedTotal) throw codedError('ORDER_TOTAL_MISMATCH');
+    const receipt = {
+      id: randomUUID(),
+      reference: randomBytes(12).toString('hex').toUpperCase(),
+      total: priced.total,
+    };
+    await sql.query(
+      `INSERT INTO orders (tenant_id,id,idempotency_key,request_hash,reference,total,buyer_ciphertext,buyer_phone_hash,cohort)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [
+        tenantId,
+        receipt.id,
+        input.idempotencyKey,
+        requestHash,
+        receipt.reference,
+        receipt.total,
+        sealed.ciphertext,
+        phoneHash,
+        input.cohort,
+      ],
+    );
+    for (const line of priced.lines) {
+      await sql.query(
+        'UPDATE stock SET quantity=quantity-$1 WHERE garment_id=$2 AND size=$3',
+        [line.quantity, line.garmentId, line.size],
+      );
+      await sql.query('UPDATE garments SET stock_epoch=stock_epoch+1 WHERE id=$1', [
+        line.garmentId,
+      ]);
+      await sql.query(
+        'INSERT INTO order_lines (tenant_id,order_id,garment_id,size,quantity,unit_price) VALUES ($1,$2,$3,$4,$5,$6)',
+        [tenantId, receipt.id, line.garmentId, line.size, line.quantity, line.unitPrice],
+      );
+    }
+    await sql.query(
+      "INSERT INTO audit_log (tenant_id,actor_id,action,entity_id,details) VALUES ($1,'buyer','order.placed',$2,$3)",
+      [
+        tenantId,
+        receipt.id,
+        JSON.stringify({
+          total: receipt.total,
+          itemCount: lines.reduce((n, l) => n + l.quantity, 0),
+        }),
+      ],
+    );
+    return receipt;
+  });
 }
 
 /** Store phone and origin come from server configuration. Never include buyer PII. */

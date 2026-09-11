@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { runMigrations } from '@talla/database/migrate';
 import { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createPrivacyBox, tenantTransaction } from '@talla/database';
@@ -13,17 +13,16 @@ const privacy = createPrivacyBox(new Uint8Array(32).fill(1), new Uint8Array(32).
 const db = new PGlite();
 const database: Database = {
   tenant: (tenantId, work) => tenantTransaction(db, tenantId, work),
+  platform: () => {
+    // Buyer commerce always runs inside a tenant transaction. A platform connection here
+    // would be a query with no tenant set, which row-level security answers with nothing.
+    throw new Error('commerce must not open a platform connection');
+  },
   close: () => db.close(),
 };
 
 beforeAll(async () => {
-  for (const migration of ['001-initial.sql', '002-phone-verification.sql'])
-    await db.exec(
-      await readFile(
-        new URL(`../../../packages/database/migrations/${migration}`, import.meta.url),
-        'utf8',
-      ),
-    );
+  await runMigrations(db);
   await db.query(
     "INSERT INTO tenants(id,subdomain,name_ar,name_en) VALUES($1,'phone-test','اختبار','Test'),($2,'phone-other','آخر','Other')",
     [tenant, otherTenant],
@@ -51,14 +50,13 @@ describe('phone verification', () => {
     expect(sent).toHaveBeenCalledWith(phone, '123456');
     const verified = await service.verify(tenant, challenge.challengeId, phone, '123456');
     expect(
-      verifyPhoneToken(secret, privacy.phoneHash, verified.token, phone, tenant, clock),
+      verifyPhoneToken(secret, verified.token, privacy.phoneHash(phone), tenant, clock),
     ).toBe(true);
     expect(
       verifyPhoneToken(
         secret,
-        privacy.phoneHash,
         verified.token,
-        phone,
+        privacy.phoneHash(phone),
         otherTenant,
         clock,
       ),
@@ -68,7 +66,7 @@ describe('phone verification', () => {
     ).rejects.toThrow('ORDER_OTP_INVALID');
     clock = new Date(clock.getTime() + 11 * 60 * 1000);
     expect(
-      verifyPhoneToken(secret, privacy.phoneHash, verified.token, phone, tenant, clock),
+      verifyPhoneToken(secret, verified.token, privacy.phoneHash(phone), tenant, clock),
     ).toBe(false);
   });
 

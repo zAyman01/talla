@@ -1,9 +1,10 @@
-import { readFile } from 'node:fs/promises';
+import { runMigrations } from '../packages/database/src/migrate.ts';
 import { randomUUID } from 'node:crypto';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase, createPrivacyBox } from '../packages/database/src/index.ts';
 import { createCheckout } from '../modules/commerce/index.ts';
+import { conceal } from '../packages/sensitive/src/index.ts';
 
 // A dedicated disposable database only. CI provisions it as a PostgreSQL service.
 const url = process.env['TALLA_TEST_DATABASE_URL'];
@@ -24,8 +25,7 @@ describe.skipIf(!url)('real PostgreSQL concurrency', () => {
   const checkout = createCheckout({
     database,
     verifyPhone: () => Promise.resolve(true),
-    sealBuyer: privacy.seal,
-    phoneHash: privacy.phoneHash,
+    sealBuyer: privacy.sealBuyer,
   });
   const tenant = randomUUID();
   const garment = randomUUID();
@@ -33,13 +33,9 @@ describe.skipIf(!url)('real PostgreSQL concurrency', () => {
     if (!new URL(url ?? '').pathname.endsWith('_test'))
       throw new Error('Integration tests require a database ending in _test');
     await control.query(`CREATE DATABASE "${databaseName}"`);
-    for (const file of ['001-initial.sql', '002-phone-verification.sql'])
-      await migration.query(
-        await readFile(
-          new URL(`../packages/database/migrations/${file}`, import.meta.url),
-          'utf8',
-        ),
-      );
+    // One source of truth for which migrations exist, so this harness cannot drift from
+    // the schema the application ships.
+    await runMigrations(migration);
     await migration.query('ALTER ROLE talla_app LOGIN');
     await migration.query(
       "INSERT INTO tenants(id,subdomain,name_ar,name_en) VALUES($1,'concurrency-test','اختبار','Test')",
@@ -68,9 +64,9 @@ describe.skipIf(!url)('real PostgreSQL concurrency', () => {
           lines: [{ garmentId: garment, size: 'M', quantity: 1 }],
           expectedTotal: 10000,
           buyer: {
-            name: 'عميل اختبار',
-            phone: `+2010000000${String(i).padStart(2, '0')}`,
-            address: 'عنوان اختبار غير حقيقي',
+            name: conceal('عميل اختبار'),
+            phone: conceal(`+2010000000${String(i).padStart(2, '0')}`),
+            address: conceal('عنوان اختبار غير حقيقي'),
           },
           phoneToken: 'test-only',
           cohort: 'viewer',
