@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 import { describe, expect, it } from 'vitest';
 import type { Page } from 'playwright-core';
-import { gateEnabled, openReferencePage, storefront } from '../support/browser.ts';
+import { admin, gateEnabled, openReferencePage, storefront } from '../support/browser.ts';
 
 /**
  * The accessibility gate (spec 15, WCAG 2.2 AA).
@@ -205,6 +205,38 @@ describe.skipIf(!gateEnabled)('accessibility, WCAG 2.2 AA', () => {
       }
     }, 180_000);
   }
+
+  it('passes on the admin sign in screen, which is a form on a phone', async () => {
+    // A store owner signs in on the same cheap Android a buyer browses on, and this is
+    // the screen that decides whether they can. Spec 15's form rules bite hardest here:
+    // a visible label rather than a placeholder, and an error a screen reader announces.
+    const session = await openReferencePage();
+    try {
+      const { page } = session;
+      await page.goto(admin('/'), { waitUntil: 'networkidle' });
+      expect(await audit(page, 'admin: sign in')).toBe('');
+
+      // Labelled, not placeholder-only. A placeholder disappears the moment somebody
+      // types, which is exactly when they need to know what the field was for.
+      const unlabelled = await page.evaluate(() =>
+        // Hidden inputs are excluded because they are not in the accessibility tree at
+        // all. Next puts several in every form that calls a Server Function.
+        [...document.querySelectorAll('input:not([type="hidden"])')]
+          .filter((input) => {
+            const id = input.getAttribute('id');
+            return (
+              input.getAttribute('aria-label') === null &&
+              input.closest('label') === null &&
+              (id === null || document.querySelector(`label[for="${id}"]`) === null)
+            );
+          })
+          .map((input) => input.outerHTML.slice(0, 120)),
+      );
+      expect(unlabelled).toEqual([]);
+    } finally {
+      await session.close();
+    }
+  }, 120_000);
 
   it('gives every interactive control an accessible name and a visible focus ring', async () => {
     // Two things axe does not answer on its own. A control with no name is announced as

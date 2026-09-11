@@ -15,12 +15,18 @@ import type { Browser, BrowserContext, Page } from 'playwright-core';
 
 /** The store the seed creates, on the parent domain the example environment configures. */
 const DEFAULT_URL = 'http://nasij.localhost:3000';
+/** The single dedicated admin origin (spec 12.4), as the example environment names it. */
+const DEFAULT_ADMIN_URL = 'http://admin.localhost:3001';
 
 export const gateUrl = process.env['TALLA_GATE_URL'];
 export const gateEnabled = gateUrl !== undefined && gateUrl !== '';
 
 export function storefront(path = '/'): string {
   return new URL(path, gateUrl ?? DEFAULT_URL).href;
+}
+
+export function admin(path = '/'): string {
+  return new URL(path, process.env['TALLA_GATE_ADMIN_URL'] ?? DEFAULT_ADMIN_URL).href;
 }
 
 /**

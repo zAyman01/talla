@@ -52,9 +52,10 @@ Spec 15. The gate fails on any violation, not on a score.
 
 - [x] axe over the storefront: catalogue, an outfit with garments selected, and the
       checkout form with an error showing, because an error state is where forms fail.
-- [ ] axe over the admin origin: sign in, and the store screen. **Outstanding.** The
-      storefront is where a buyer is lost; admin is where an owner is inconvenienced, and
-      the owner can be told to use a different browser.
+- [x] axe over the admin origin's sign in screen, plus a check that no visible input is
+      labelled by a placeholder alone. An owner signs in on the same cheap Android a buyer
+      browses on, and that screen decides whether they can work at all. The store screen
+      is behind a session and is not covered yet.
 - [x] The violations found are fixed, or recorded with a reason and a date. A gate that
       ships with an allowlist of known failures is a gate that will grow one.
 
