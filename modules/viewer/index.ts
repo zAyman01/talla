@@ -31,3 +31,12 @@ export interface ViewerSession {
 export interface Viewer {
   mount(options: ViewerMountOptions): Promise<ViewerSession>;
 }
+
+export {
+  chooseTier,
+  readCachedTier,
+  writeCachedTier,
+  TIER_BUDGET,
+} from './internal/tier.ts';
+export type { DeviceSignals, TierBudget } from './internal/tier.ts';
+export { probeTier, readDeviceSignals } from './internal/probe.ts';

@@ -27,7 +27,8 @@
     "@talla/observability": "workspace:*",
     "@talla/sensitive": "workspace:*",
     "@talla/config": "workspace:*",
-    "@talla/commerce": "workspace:*"
+    "@talla/commerce": "workspace:*",
+    "@talla/viewer": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.2.0",

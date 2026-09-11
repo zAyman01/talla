@@ -19,6 +19,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { BodySize } from '@talla/shared';
 import type { GarmentBlockId, LayerDepth, MeshData } from '@talla/blocks';
+import { TIER_BUDGET, probeTier } from '@talla/viewer';
 import { FIGURE_BOUNDS, bodyMesh, garmentMesh, settleStart } from '@talla/blocks';
 
 export interface DressedGarment {
@@ -91,6 +92,23 @@ export function Mannequin({ size, garments, onUnavailable }: MannequinProps): Re
   useEffect(() => {
     const element = host.current;
     if (!element) return;
+
+    /**
+     * The tier decides whether there is a viewer at all (spec 11.2).
+     *
+     * Probed here rather than guessed from a user agent, and tier C never creates a
+     * context: a software rasteriser or a data-saver preference is answered before a
+     * WebGL canvas exists, not after it stutters. The turntable that tier C is supposed
+     * to show arrives with the asset pipeline; until then the page falls back to the
+     * photographs it already has, which is the same code path.
+     */
+    const tier = probeTier();
+    if (TIER_BUDGET[tier].usesTurntable) {
+      setFailed(true);
+      onUnavailable();
+      return;
+    }
+
     let renderer: THREE.WebGLRenderer;
     try {
       renderer = new THREE.WebGLRenderer({
