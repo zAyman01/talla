@@ -337,11 +337,15 @@ written and no untrusted byte parsed outside the sandbox.
 - [x] A buyer loads a tenant subdomain, sees a catalogue read from PostgreSQL, builds an
       outfit, verifies a phone, and places a cash-on-delivery order that lands in `orders`
       with an encrypted buyer record. Runs in CI as one end-to-end test.
-- [ ] An owner signs in with OTP on the admin origin, uploads photos, and moves a garment to
-      `confirmation`. **Outstanding.** The pieces are covered separately (owner auth,
-      `withOwnerTenant`, the sandboxed worker, the queue), but no single test drives the whole
-      admin path. The machine now has a Docker daemon, so what is left is the test itself
-      rather than the means to run it.
+- [x] An owner signs in with OTP on the admin origin, uploads photos, and moves a garment to
+      `confirmation`. `apps/admin/test/end-to-end.test.ts` drives the whole path: a code, a
+      session, three photographs through the network-isolated container, a garment at
+      `processing` with a job queued beside it, the queue drained, and the owner's
+      confirmation publishing it, with both steps on the audit log under the owner who took
+      them. The one stub is the understanding handler, because that stage is Stage E and a
+      queued job dead-letters with `job.no_handler` until it exists. The sanitizer is the
+      real sandbox wherever a Docker daemon is available, which is CI and any machine
+      following CONTRIBUTING.
 - [x] Migrations apply to an empty database and the RLS coverage assertion passes.
 - [x] A test logs a complete buyer record and the output contains no phone digits.
 - [x] Every code raised in the codebase resolves through `toWireError`.
