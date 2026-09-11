@@ -34,6 +34,10 @@ here.
 | [0019](0019-postgres-sessions-and-rate-limits.md) | Sessions and rate-limit counters live in PostgreSQL, not Redis | Accepted, revisited when the styling cache lands |
 | [0020](0020-sensitive-values-are-opaque.md) | Sensitive values are opaque wrappers, not branded strings | Accepted |
 | [0022](0022-owner-identity-is-platform-level.md) | Owner identity is platform level, and tenant membership is a join | Accepted |
+| [0023](0023-one-browser-for-every-browser-gate.md) | One browser driver for every gate that needs a browser | Accepted |
+
+0021 is reserved for S3-compatible object storage and is written when the adapter is, in
+Stage E. Numbers are never reused.
 
 ## Format
 
