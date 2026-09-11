@@ -2,6 +2,8 @@ import { errorCatalog, type ErrorCode } from './catalog.ts';
 import type { ErrorEntry, WireError } from './types.ts';
 
 export { errorCatalog } from './catalog.ts';
+export { codedError, errorCodeOf, isCodedError } from './coded.ts';
+export type { CodedError } from './coded.ts';
 export type { ErrorCode } from './catalog.ts';
 export type { ErrorAudience, Copy, ErrorEntry, WireError } from './types.ts';
 

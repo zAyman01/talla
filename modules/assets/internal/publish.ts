@@ -1,4 +1,5 @@
 import { assetKey, checkAssetBudget } from './budget.ts';
+import { codedError } from '@talla/errors';
 
 export interface PackedFile {
   readonly bytes: Uint8Array;
@@ -49,7 +50,7 @@ export async function publishBundle(
     !Number.isSafeInteger(input.mannequinBytes) ||
     input.mannequinBytes < 1
   )
-    throw new Error('ASSET_LOD_GENERATION_FAILED');
+    throw codedError('ASSET_LOD_GENERATION_FAILED');
   for (const file of input.files) {
     if (
       file.bytes.length === 0 ||
@@ -57,7 +58,7 @@ export async function publishBundle(
       (file.role.startsWith('texture') && file.extension !== 'ktx2') ||
       (file.role === 'turntable' && file.extension !== 'webp')
     )
-      throw new Error('ASSET_LOD_GENERATION_FAILED');
+      throw codedError('ASSET_LOD_GENERATION_FAILED');
   }
   const size = (role: PackedFile['role']): number =>
     input.files.find((f) => f.role === role)?.bytes.length ?? 0;

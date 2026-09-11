@@ -1,4 +1,5 @@
 import type { Database } from '@talla/database';
+import { codedError } from '@talla/errors';
 
 export type OrderState =
   'placed' | 'confirmed' | 'dispatched' | 'fulfilled' | 'cancelled';
@@ -18,7 +19,7 @@ export async function transitionOrder(
   next: OrderState,
   actorId: string,
 ): Promise<void> {
-  if (!actorId) throw new Error('AUTH_FORBIDDEN');
+  if (!actorId) throw codedError('AUTH_FORBIDDEN');
   await database.tenant(tenantId, async (sql) => {
     const row = (
       await sql.query<{ status: OrderState }>(
@@ -26,9 +27,9 @@ export async function transitionOrder(
         [orderId],
       )
     ).rows[0];
-    if (!row) throw new Error('AUTH_FORBIDDEN');
+    if (!row) throw codedError('AUTH_FORBIDDEN');
     if (row.status === next) return;
-    if (!allowed[row.status].includes(next)) throw new Error('ORDER_INVALID_STATE');
+    if (!allowed[row.status].includes(next)) throw codedError('ORDER_INVALID_STATE');
     if (next === 'cancelled') {
       const lines = (
         await sql.query<{ garment_id: string; size: string; quantity: number }>(

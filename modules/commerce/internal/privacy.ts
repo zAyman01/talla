@@ -1,4 +1,5 @@
 import type { Database, PrivacyBox } from '@talla/database';
+import { codedError } from '@talla/errors';
 
 /** Support-operated until owner authentication is integrated. Phone input must be
  * verified by the operator; these functions are never exposed as anonymous routes. */
@@ -35,7 +36,7 @@ export async function eraseBuyerContact(
   phone: string,
   actorId: string,
 ): Promise<number> {
-  if (!actorId) throw new Error('AUTH_FORBIDDEN');
+  if (!actorId) throw codedError('AUTH_FORBIDDEN');
   return database.tenant(tenantId, async (sql) => {
     const { rows } = await sql.query<{ id: string }>(
       "UPDATE orders SET buyer_ciphertext=NULL,buyer_phone_hash='deleted:'||id::text WHERE buyer_phone_hash=$1 RETURNING id",

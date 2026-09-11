@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
+import { codedError } from '@talla/errors';
 
 export interface SanitizedImage {
   readonly bytes: Uint8Array;
@@ -9,10 +10,18 @@ export interface SanitizedImage {
   readonly contentType: 'image/webp';
 }
 
+/** No secrets, no database URL, nothing worth having if the sandbox is compromised. */
+function sandboxEnvironment(): NodeJS.ProcessEnv {
+  const environment = {} as NodeJS.ProcessEnv;
+  environment['PATH'] = process.env['PATH'] ?? '';
+  environment['HOME'] = process.env['HOME'] ?? '';
+  return environment;
+}
+
 /** Docker image is built by the operator. No unsandboxed fallback is permitted. */
 export async function sanitizeInSandbox(input: Uint8Array): Promise<SanitizedImage> {
   if (input.byteLength === 0 || input.byteLength > 12 * 1024 * 1024)
-    throw new Error('INGEST_INVALID_FILE');
+    throw codedError('INGEST_INVALID_FILE');
   const name = `talla-image-${randomUUID()}`;
   return new Promise((resolve, reject) => {
     const child = spawn(
@@ -39,7 +48,15 @@ export async function sanitizeInSandbox(input: Uint8Array): Promise<SanitizedIma
       ],
       {
         stdio: ['pipe', 'pipe', 'pipe'],
-        env: { PATH: process.env['PATH'] ?? '', HOME: process.env['HOME'] ?? '' },
+        // The sandbox gets a deliberately minimal environment: no secrets, no database
+        // URL, nothing worth having if it is ever compromised (spec 12.2).
+        //
+        // Built by assignment rather than as a literal. Next augments `NodeJS.ProcessEnv`
+        // to make `NODE_ENV` a required member, so an object literal here stops matching
+        // `spawn` the moment this module is consumed from an application, and every
+        // stream below then resolves to `never`. Widening the sandbox's environment to
+        // satisfy a framework's type augmentation would be the wrong way round.
+        env: sandboxEnvironment(),
       },
     );
     const chunks: Buffer[] = [];
