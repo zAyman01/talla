@@ -1,7 +1,8 @@
 # Talla — Production Roadmap Design
 
-**Status:** Proposed
+**Status:** Accepted
 **Date:** 2026-09-11
+**Stage S closed:** 2026-09-12
 **Parent spec:** [`2026-09-04-talla-design.md`](2026-09-04-talla-design.md)
 **Phase map:** [`../plans/2026-09-06-build-phases.md`](../plans/2026-09-06-build-phases.md)
 
@@ -49,6 +50,12 @@ pilot does not need it, the deferral is stated with the trigger that ends it.
 ---
 
 ## 2. Where the repository actually stands
+
+> **This section is a snapshot of 2026-09-11 and is kept as written.** Stage S closed on
+> 2026-09-12, so the two lists below are now history rather than status: the modules have
+> callers, and the application surface that was absent exists. The living record is
+> [`../plans/2026-09-11-stage-s-application-spine.md`](../plans/2026-09-11-stage-s-application-spine.md),
+> which has no open items. Stages E, G and O below are unchanged and still stand.
 
 ### Finished and holding
 
