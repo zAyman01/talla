@@ -17,7 +17,7 @@ import type { ReactNode } from 'react';
 import type { BodySize } from '@talla/shared';
 import type { FitVerdict } from '@talla/blocks';
 import { garmentFit } from '@talla/blocks';
-import type { DressedGarment } from './mannequin.tsx';
+import type { DressedGarment } from '@talla/viewer';
 import type { CatalogProduct } from '../product.ts';
 
 const Mannequin = dynamic(() => import('./mannequin.tsx').then((m) => m.Mannequin), {

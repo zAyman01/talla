@@ -1,36 +1,18 @@
-import type { PublishedGarment } from '@talla/assets';
-import type { BodySize, DeviceTier, Slot } from '@talla/shared';
+import type { MannequinScene, SceneOptions } from './internal/scene.ts';
 
 /**
  * Browser 3D and the device-tier ladder.
  *
- * Guarantee to callers: degrades by tier, never blanks. A lost WebGL context falls back
- * to the tier C turntable rather than showing an empty canvas (spec 11.2).
+ * Guarantee to callers: degrades by tier, never blanks. A device that cannot render, and
+ * a WebGL context lost mid-session, both fall back rather than showing an empty canvas
+ * (spec 11.2).
+ *
+ * The tier decision is synchronous and cheap, because the page has to make it before it
+ * knows whether a viewer exists at all. The scene is asynchronous and expensive, because
+ * it is Three.js. Those two facts are why `createMannequinScene` returns a promise: the
+ * engine arrives in its own chunk, and importing this module to ask about a tier cannot
+ * put a 3D engine in a first paint (spec 11.3).
  */
-
-export interface ViewerMountOptions {
-  readonly canvas: HTMLCanvasElement;
-  /** Omit to probe. The probe result is cached per device. */
-  readonly tier?: DeviceTier;
-  readonly bodySize: BodySize;
-  readonly reducedMotion: boolean;
-}
-
-export interface ViewerSession {
-  /** Layering resolves by slot, outermost last. */
-  dress(
-    garments: ReadonlyArray<{ garment: PublishedGarment; slot: Slot }>,
-  ): Promise<void>;
-  /** A vertex blend. No network request: body sizes ship as morph deltas (spec 11.3). */
-  setBodySize(size: BodySize): void;
-  /** The tier actually in use, which is not always the tier requested. */
-  currentTier(): DeviceTier;
-  dispose(): void;
-}
-
-export interface Viewer {
-  mount(options: ViewerMountOptions): Promise<ViewerSession>;
-}
 
 export {
   chooseTier,
@@ -40,3 +22,23 @@ export {
 } from './internal/tier.ts';
 export type { DeviceSignals, TierBudget } from './internal/tier.ts';
 export { probeTier, readDeviceSignals } from './internal/probe.ts';
+export type {
+  DressedGarment,
+  MannequinScene,
+  SceneOptions,
+  SceneStyle,
+} from './internal/scene.ts';
+
+/**
+ * Build the mannequin scene, loading the renderer on the way.
+ *
+ * Rejects if the device will not give up a WebGL context. Callers settle the tier first,
+ * so by the time this is called a refusal is a genuine failure rather than a device that
+ * was never going to render at all.
+ */
+export async function createMannequinScene(
+  options: SceneOptions,
+): Promise<MannequinScene> {
+  const scene = await import('./internal/scene.ts');
+  return scene.createMannequinScene(options);
+}

@@ -330,13 +330,19 @@ importers:
 
   modules/viewer:
     dependencies:
-      '@talla/assets':
+      '@talla/blocks':
         specifier: workspace:*
-        version: link:../assets
+        version: link:../blocks
       '@talla/shared':
         specifier: workspace:*
         version: link:../shared
+      three:
+        specifier: ^0.180.0
+        version: 0.180.0
     devDependencies:
+      '@types/three':
+        specifier: ^0.180.0
+        version: 0.180.0
       typescript:
         specifier: ^5.9.2
         version: 5.9.3

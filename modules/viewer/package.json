@@ -10,10 +10,12 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@talla/assets": "workspace:*",
-    "@talla/shared": "workspace:*"
+    "@talla/blocks": "workspace:*",
+    "@talla/shared": "workspace:*",
+    "three": "^0.180.0"
   },
   "devDependencies": {
+    "@types/three": "^0.180.0",
     "typescript": "^5.9.2"
   }
 }
