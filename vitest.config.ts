@@ -7,6 +7,7 @@ export default defineConfig({
       'packages/*/test/**/*.test.ts',
       'modules/*/test/**/*.test.ts',
       'workers/*/test/**/*.test.ts',
+      'apps/*/test/**/*.test.ts',
     ],
     environment: 'node',
     // Coverage percentage is not a target (spec 16.3). The five test kinds named there

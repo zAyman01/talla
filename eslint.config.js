@@ -17,7 +17,7 @@ export default defineConfig([
     '**/next-env.d.ts',
     '**/postcss.config.mjs',
     '**/src/generated/**',
-    'test/fixtures/boundary-violation/**',
+    'test/fixtures/**',
   ]),
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,

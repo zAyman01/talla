@@ -32,8 +32,19 @@ describe('module boundaries', () => {
     expect(output).toContain('commerce/internal/pricing.ts');
   }, 60_000);
 
+  it('catches a client component reaching into the server container', () => {
+    // The rule this proves is the one that keeps a connection string and four secrets
+    // out of a browser bundle. A violation of it is invisible in review.
+    const { status, output } = cruise('test/fixtures/client-into-server');
+    expect(status, 'the planted violation did not fail the gate').not.toBe(0);
+    expect(output).toContain('no-client-into-server');
+    expect(output).toContain('server/container.ts');
+  }, 60_000);
+
   it('passes on the real tree', () => {
-    const { status, output } = cruise('modules', 'packages', 'workers');
+    // `apps` is included because the root `boundaries` script cruises it. A test that
+    // checks less than the gate does is a test that goes green while the gate goes red.
+    const { status, output } = cruise('modules', 'packages', 'workers', 'apps');
     expect(status, output).toBe(0);
   }, 60_000);
 });

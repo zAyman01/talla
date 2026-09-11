@@ -41,6 +41,14 @@ module.exports = {
       to: { path: '(^|/)apps/' },
     },
     {
+      name: 'no-client-into-server',
+      comment:
+        'Client components live in apps/*/components, server code lives in apps/*/server, and files under apps/*/app are the only place the two meet. A client component that imports the server container pulls a connection string and four keys into a browser bundle, and nothing about that failure is visible in review.',
+      severity: 'error',
+      from: { path: '(^|/)apps/[^/]+/components/' },
+      to: { path: '(^|/)apps/[^/]+/server/' },
+    },
+    {
       name: 'no-utils-module',
       comment:
         'There is no utils module and there will not be one. It is where boundaries go to die (spec 16.2). Shared code goes in modules/shared.',
@@ -74,7 +82,10 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '(^|/)node_modules/' },
+    // Build output is not source and has no boundaries to enforce. It is excluded rather
+    // than left to CI ordering: the gate passes today only because it runs before the
+    // build, and a cached `.next` would quietly start cruising bundled chunks instead.
+    exclude: { path: '(^|/)(node_modules|\\.next)/' },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: 'tsconfig.base.json' },
     enhancedResolveOptions: {
