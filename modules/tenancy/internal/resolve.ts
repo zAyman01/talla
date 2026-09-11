@@ -39,12 +39,18 @@ export function subdomainFromHost(
     return undefined;
 
   let hostname: string;
+  let parent: string;
   try {
     hostname = new URL(`http://${normalizedHost}`).hostname;
+    // The parent is parsed the same way as the host, so a port on either side drops out
+    // before the comparison. Development runs on `localhost:3000` and the port is not
+    // part of what makes a host a child of a domain, so requiring the two spellings to
+    // agree would only mean every store resolving to nothing on a developer's machine.
+    parent = new URL(`http://${normalizedParent}`).hostname;
   } catch {
     return undefined;
   }
-  const suffix = `.${normalizedParent}`;
+  const suffix = `.${parent}`;
   if (!hostname.endsWith(suffix)) return undefined;
   const candidate = hostname.slice(0, -suffix.length);
   if (!label.test(candidate) || candidate.includes('.')) return undefined;

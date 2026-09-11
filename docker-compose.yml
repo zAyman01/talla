@@ -18,6 +18,9 @@ services:
       - '5432:5432'
     volumes:
       - postgres:/var/lib/postgresql/data
+      # Runs once on a clean volume, before anything connects. It provisions the two login
+      # roles: migration 001 deliberately ships `talla_app` with no password.
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/10-roles.sql:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres -d talla_dev']
       interval: 5s
@@ -34,7 +37,7 @@ services:
     command: ['pnpm', '--filter', '@talla/database', 'migrate']
     env_file: .env
     environment:
-      TALLA_MIGRATION_DATABASE_URL: postgresql://postgres:local-development-only@postgres:5432/talla_dev
+      TALLA_MIGRATION_DATABASE_URL: postgresql://talla_migrate:local-development-only@postgres:5432/talla_dev
     depends_on:
       postgres:
         condition: service_healthy
@@ -49,7 +52,7 @@ services:
     command: ['node', 'scripts/seed-dev.ts']
     env_file: .env
     environment:
-      TALLA_MIGRATION_DATABASE_URL: postgresql://postgres:local-development-only@postgres:5432/talla_dev
+      TALLA_MIGRATION_DATABASE_URL: postgresql://talla_migrate:local-development-only@postgres:5432/talla_dev
     profiles: ['tools']
     depends_on:
       migrate:
@@ -61,8 +64,21 @@ services:
       dockerfile: apps/storefront/Dockerfile
     env_file: .env
     environment:
-      TALLA_DATABASE_URL: postgresql://postgres:local-development-only@postgres:5432/talla_dev
+      TALLA_DATABASE_URL: postgresql://talla_app:local-development-only@postgres:5432/talla_dev
       PORT: '3000'
+      # Next's standalone server binds whatever HOSTNAME says, and Docker sets HOSTNAME to
+      # the container id. Without this it listens on the container's own address only, so
+      # the published port works and the healthcheck, which calls 127.0.0.1 from inside,
+      # never does.
+      HOSTNAME: '0.0.0.0'
+      # Next's standalone server sets NODE_ENV=production itself, whatever the environment
+      # says, and packages/config refuses the `log` OTP channel in production because codes
+      # in a deployment log are an authentication bypass for everyone who can read it. So
+      # these images cannot print codes, and the channel is named honestly instead: there is
+      # no SMS provider chosen yet, so phone verification fails at the send. Everything that
+      # does not need a code works. For the paths that do, run the apps on the host with
+      # `node scripts/dev.ts storefront`, where NODE_ENV really is development.
+      TALLA_OTP_CHANNEL: sms
     ports:
       - '3000:3000'
     depends_on:
@@ -84,8 +100,21 @@ services:
       dockerfile: apps/admin/Dockerfile
     env_file: .env
     environment:
-      TALLA_DATABASE_URL: postgresql://postgres:local-development-only@postgres:5432/talla_dev
+      TALLA_DATABASE_URL: postgresql://talla_app:local-development-only@postgres:5432/talla_dev
       PORT: '3001'
+      # Next's standalone server binds whatever HOSTNAME says, and Docker sets HOSTNAME to
+      # the container id. Without this it listens on the container's own address only, so
+      # the published port works and the healthcheck, which calls 127.0.0.1 from inside,
+      # never does.
+      HOSTNAME: '0.0.0.0'
+      # Next's standalone server sets NODE_ENV=production itself, whatever the environment
+      # says, and packages/config refuses the `log` OTP channel in production because codes
+      # in a deployment log are an authentication bypass for everyone who can read it. So
+      # these images cannot print codes, and the channel is named honestly instead: there is
+      # no SMS provider chosen yet, so phone verification fails at the send. Everything that
+      # does not need a code works. For the paths that do, run the apps on the host with
+      # `node scripts/dev.ts storefront`, where NODE_ENV really is development.
+      TALLA_OTP_CHANNEL: sms
     ports:
       - '3001:3001'
     depends_on:
@@ -102,7 +131,7 @@ services:
     command: ['pnpm', '--filter', '@talla/jobs-worker', 'start']
     env_file: .env
     environment:
-      TALLA_DATABASE_URL: postgresql://postgres:local-development-only@postgres:5432/talla_dev
+      TALLA_DATABASE_URL: postgresql://talla_app:local-development-only@postgres:5432/talla_dev
     depends_on:
       migrate:
         condition: service_completed_successfully

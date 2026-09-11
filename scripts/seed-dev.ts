@@ -71,32 +71,46 @@ function spec(
   });
 }
 
+const client = await pool.connect();
+
 try {
   await runMigrations(pool);
 
-  await pool.query(
+  await client.query(
     "INSERT INTO tenants (id, subdomain, name_ar, name_en) VALUES ($1, 'nasij', 'النسيج', 'Nasij') ON CONFLICT (subdomain) DO NOTHING",
     [tenantId],
   );
-  const { rows: tenants } = await pool.query<{ id: string }>(
+  const { rows: tenants } = await client.query<{ id: string }>(
     "SELECT id FROM tenants WHERE subdomain = 'nasij'",
   );
   const store = tenants[0]?.id ?? tenantId;
 
-  await pool.query(
+  await client.query(
     'INSERT INTO owners (id, phone_hash) VALUES ($1, $2) ON CONFLICT (phone_hash) DO NOTHING',
     [ownerId, phoneHash],
   );
-  const { rows: owners } = await pool.query<{ id: string }>(
+  const { rows: owners } = await client.query<{ id: string }>(
     'SELECT id FROM owners WHERE phone_hash = $1',
     [phoneHash],
   );
-  await pool.query(
+  await client.query(
     "INSERT INTO owner_tenants (owner_id, tenant_id, role) VALUES ($1, $2, 'owner') ON CONFLICT DO NOTHING",
     [owners[0]?.id ?? ownerId, store],
   );
 
-  await pool.query(
+  /**
+   * Everything below this line is tenant scoped, and the seed obeys the same row-level
+   * security the application does.
+   *
+   * The migration role owns these tables, and they FORCE row-level security, so ownership
+   * buys nothing: without `app.current_tenant` the WITH CHECK matches no row and the
+   * insert is refused. That is the policy working. Seeding through a superuser instead
+   * would bypass it and leave the one obvious end-to-end exercise of tenant isolation
+   * proving nothing (spec 12.3).
+   */
+  await client.query("SELECT set_config('app.current_tenant', $1, false)", [store]);
+
+  await client.query(
     `INSERT INTO garments (tenant_id, id, name_ar, name_en, price, status, spec)
      VALUES ($1, $2, $3, $4, $5, 'ready', $6), ($1, $7, $8, $9, $10, 'ready', $11)
      ON CONFLICT DO NOTHING`,
@@ -125,13 +139,13 @@ try {
   // The jean is short two sizes on purpose, so the sold-out path is visible without
   // anybody having to place an order first.
   for (const size of ['XS', 'S', 'M', 'L', 'XL', 'XXL']) {
-    await pool.query(
+    await client.query(
       'INSERT INTO stock (tenant_id, garment_id, size, quantity) VALUES ($1, $2, $3, 8) ON CONFLICT DO NOTHING',
       [store, tee, size],
     );
   }
   for (const size of ['S', 'M', 'L', 'XL']) {
-    await pool.query(
+    await client.query(
       'INSERT INTO stock (tenant_id, garment_id, size, quantity) VALUES ($1, $2, $3, 5) ON CONFLICT DO NOTHING',
       [store, jeans, size],
     );
@@ -140,5 +154,6 @@ try {
   process.stdout.write(`Seeded store "nasij" (${store}).\n`);
   process.stdout.write(`Owner sign in: ${ownerPhone}, code printed by the admin log.\n`);
 } finally {
+  client.release();
   await pool.end();
 }

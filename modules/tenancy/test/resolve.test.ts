@@ -6,6 +6,15 @@ describe('tenant host resolution', () => {
     expect(subdomainFromHost('Store-One.Talla.test:443', 'talla.test')).toBe('store-one');
   });
 
+  it('resolves a parent domain that carries a port, which is every development machine', () => {
+    // TALLA_STOREFRONT_ROOT_DOMAIN is localhost:3000 locally. The port is not part of
+    // what makes a host a child of a domain, and treating it as part of the name meant
+    // every seeded store rendering as "this store is unavailable".
+    expect(subdomainFromHost('nasij.localhost:3000', 'localhost:3000')).toBe('nasij');
+    expect(subdomainFromHost('nasij.localhost', 'localhost:3000')).toBe('nasij');
+    expect(subdomainFromHost('localhost:3000', 'localhost:3000')).toBeUndefined();
+  });
+
   it('rejects suffix spoofing, nested names, parent hosts, and invalid labels', () => {
     for (const host of [
       'store.talla.test.attacker.example',

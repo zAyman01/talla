@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "storefront",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/dev.ts", "storefront"],
+      "port": 3000
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/dev.ts", "admin"],
+      "port": 3001
+    }
+  ]
+}

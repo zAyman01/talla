@@ -191,11 +191,11 @@ unregistered number and a registered one are indistinguishable in response and t
       up the id already on the context rather than minting its own.
 - [x] Resolution failure returns the same response for "no such tenant" and "suspended",
       per the tenancy module's existing contract.
-- [ ] **Moved to Task 7.** `apps/admin/server/request.ts`: `withOwnerTenant(request, work)`
+- [x] **Done in Task 7.** `apps/admin/server/request.ts`: `withOwnerTenant(request, work)`
       resolving the tenant from the session's `owner_tenants` membership, never from a header.
       This plan had an ordering error: the file cannot exist before `apps/admin` is
-      scaffolded, which is Task 7. The rule it enforces is already implemented and tested as
-      `authorizeTenant` in Task 3, so only the thin request binding is outstanding.
+      scaffolded, which is Task 7. The rule it enforces was already implemented and tested as
+      `authorizeTenant` in Task 3; the thin request binding landed with the admin scaffold.
 - [x] A requested tenant outside the owner's membership fails `AUTH_FORBIDDEN`. Implemented
       and tested in Task 3 as `authorizeTenant`; Task 7 wires it to a request.
 - [x] Test: a storefront request carrying a forged `Host` for another tenant reads none of
@@ -340,14 +340,24 @@ written and no untrusted byte parsed outside the sandbox.
 - [ ] An owner signs in with OTP on the admin origin, uploads photos, and moves a garment to
       `confirmation`. **Outstanding.** The pieces are covered separately (owner auth,
       `withOwnerTenant`, the sandboxed worker, the queue), but no single test drives the whole
-      admin path, because uploading needs the Docker sandbox and this machine has no daemon.
+      admin path. The machine now has a Docker daemon, so what is left is the test itself
+      rather than the means to run it.
 - [x] Migrations apply to an empty database and the RLS coverage assertion passes.
 - [x] A test logs a complete buyer record and the output contains no phone digits.
 - [x] Every code raised in the codebase resolves through `toWireError`.
-- [ ] `docker compose up` gives a working system from a clean clone. **Unverified here.**
-      The compose file, both Dockerfiles and the seed script are written, and CI builds both
-      images, but the Docker daemon is not running on this machine so the stack has never
-      actually been brought up.
+- [x] `docker compose up` gives a working system from a clean clone. **Verified**: five
+      services up and healthy from an empty volume, the seeded store served by the production
+      image at `nasij.localhost:3000` with the mannequin rendering, and the admin sign in
+      screen on its own origin. Bringing it up for the first time found four things that were
+      written but never run: the app connected as a superuser and was refused by its own role
+      check, the seed bypassed row-level security instead of obeying it, `COPY . .` dragged
+      the host's `node_modules` into the image, and the healthcheck called an address the
+      Next standalone server was not listening on.
+      One thing does not work and cannot: Next's standalone server forces
+      `NODE_ENV=production`, and `packages/config` refuses the `log` OTP channel there on
+      purpose, so these images cannot print a sign in code. The compose file names the
+      channel `sms`, which has no adapter yet, and says so. Phone verification is exercised
+      on the host, where the environment is honestly development.
 - [x] The full existing gate stays green: typecheck, lint, format, boundaries, generated
       contracts current, tests, secret scan, dependency audit, build.
 

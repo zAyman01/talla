@@ -1,0 +1,25 @@
+# The build context is the whole workspace, because the apps consume their packages as
+# TypeScript source. Everything that is not source is excluded here.
+
+# Host dependencies are the wrong ones. They are compiled for this machine, they are the
+# largest thing in the repository, and pnpm refuses to purge a modules directory it did
+# not create when there is no TTY to ask, which fails the build outright.
+node_modules
+**/node_modules
+
+# Build output. The image builds its own.
+.next
+**/.next
+**/*.tsbuildinfo
+
+# Never in an image. .env holds four keys and two database passwords.
+.env
+.env.*
+!.env.example
+
+.git
+.github
+.claude
+
+# docs/ is NOT excluded. docs/frontend/tokens.css is imported by the storefront's
+# stylesheet, so the design system is a build input, not documentation.
