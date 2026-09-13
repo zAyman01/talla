@@ -28,7 +28,11 @@ export default defineConfig([
         // the default project or linting the repository root fails on the linter's own
         // configuration.
         projectService: {
-          allowDefaultProject: ['eslint.config.js', '.dependency-cruiser.cjs'],
+          allowDefaultProject: [
+            'eslint.config.js',
+            '.dependency-cruiser.cjs',
+            'scripts/*.mjs',
+          ],
         },
         tsconfigRootDir: import.meta.dirname,
       },

@@ -9,12 +9,14 @@ a {
   text-underline-offset: var(--space-1);
 }
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 button,
 a,
-input {
+input,
+textarea {
   touch-action: manipulation;
 }
 button {
@@ -256,7 +258,8 @@ legend {
 .lab-values label {
   font-size: var(--text-xs);
 }
-input {
+input,
+textarea {
   width: 100%;
   min-height: var(--tap-min);
   padding: var(--space-2);
@@ -264,6 +267,10 @@ input {
   color: var(--ink);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
+}
+textarea {
+  min-height: var(--space-24);
+  resize: vertical;
 }
 .compare-bar {
   display: flex;
@@ -860,7 +867,8 @@ html {
   justify-content: space-between;
   font-size: var(--text-md);
 }
-.checkout-disabled {
+.checkout-disabled,
+.checkout-notice {
   padding: var(--space-4);
   display: grid;
   grid-template-columns: auto 1fr;
@@ -870,6 +878,111 @@ html {
   background: var(--surface-sunken);
   color: var(--ink-muted);
   font-size: var(--text-xs);
+}
+.catalog-state {
+  min-height: var(--viewer-min-height);
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-2);
+  text-align: center;
+  color: var(--ink-muted);
+}
+.checkout-form,
+.checkout-success {
+  padding-top: var(--space-6);
+  display: grid;
+  gap: var(--space-4);
+}
+.checkout-form > label {
+  display: grid;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-label);
+}
+.privacy-check {
+  grid-template-columns: var(--tap-min) 1fr;
+  align-items: start;
+  font-weight: var(--weight-body) !important;
+  line-height: var(--leading-ar);
+}
+.privacy-check input {
+  width: var(--tap-min);
+  margin: 0;
+}
+.checkout-error,
+.development-code {
+  padding: var(--space-4);
+  display: grid;
+  gap: var(--space-1);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-sm);
+  color: var(--danger);
+  font-size: var(--text-xs);
+}
+.checkout-note {
+  color: var(--ink-muted);
+  font-size: var(--text-sm);
+}
+.development-code {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+.checkout-success {
+  justify-items: start;
+}
+.checkout-success > svg {
+  color: var(--success);
+}
+.checkout-success code {
+  direction: ltr;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-family: var(--font-numeric);
+  overflow-wrap: anywhere;
+}
+.privacy-page {
+  max-width: var(--content-max);
+  min-height: 100dvh;
+  display: grid;
+  align-content: start;
+  gap: var(--space-6);
+}
+.privacy-page p {
+  max-width: 64ch;
+  color: var(--ink-muted);
+  line-height: var(--leading-ar);
+}
+.order-page {
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  gap: var(--space-8);
+}
+.order-page > section {
+  width: 100%;
+  max-width: var(--viewer-min-height);
+  padding: var(--space-6);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+.order-status {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+.order-status > svg {
+  color: var(--success);
+}
+.order-status code {
+  direction: ltr;
+  font-family: var(--font-numeric);
+}
+.order-lines {
+  margin: var(--space-4) 0 0;
+  padding-inline-start: var(--space-6);
 }
 .full-button {
   width: 100%;

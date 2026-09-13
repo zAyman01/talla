@@ -79,6 +79,7 @@ function input(): CheckoutInput {
     },
     phoneToken: 'verified-by-provider',
     cohort: 'viewer',
+    privacyNoticeVersion: '2026-09-09',
   };
 }
 it('rejects a stale price and unverified phone without deducting stock', async () => {

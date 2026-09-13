@@ -21,6 +21,20 @@ export interface CatalogItem {
   readonly sizesInStock: readonly Size[];
 }
 
+export interface CatalogProduct {
+  readonly id: string;
+  readonly name: string;
+  readonly price: Piastres;
+  readonly category: 'top' | 'bottom';
+  readonly categoryLabel: string;
+  readonly image: {
+    readonly url: string;
+    readonly width: number;
+    readonly height: number;
+  };
+  readonly sizes: readonly Size[];
+}
+
 /** What the client may send: what, which size, how many. Never what it costs. */
 export interface CartLineInput {
   readonly garmentId: GarmentId;
@@ -85,3 +99,8 @@ export type {
   PhoneVerification,
   PhoneVerificationDependencies,
 } from './internal/phone.ts';
+export { listCatalog } from './internal/catalog.ts';
+export { getOrderSummary } from './internal/order-summary.ts';
+export type { PublicOrderSummary } from './internal/order-summary.ts';
+export { listOwnerOrders, listInventory, updateInventory } from './internal/owner.ts';
+export type { OwnerOrder, InventoryItem } from './internal/owner.ts';

@@ -18,9 +18,9 @@ const display = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'النسيج | متجر طلّة التجريبي',
-  description: 'واجهة طلّة التجريبية لبناء طلة من كتالوج متجر الملابس.',
-  robots: { index: false, follow: false },
+  title: 'طلّة | شوفي الطلة واطلبيها',
+  description: 'كوّني طلتك من كتالوج المتجر واطلبيها بالدفع عند الاستلام.',
+  robots: { index: true, follow: true },
 };
 export default function Layout({ children }: { children: ReactNode }): ReactNode {
   return (

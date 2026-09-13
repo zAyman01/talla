@@ -70,6 +70,7 @@ describe.skipIf(!url)('real PostgreSQL concurrency', () => {
           },
           phoneToken: 'test-only',
           cohort: 'viewer',
+          privacyNoticeVersion: '2026-09-09',
         }),
       ),
     );
