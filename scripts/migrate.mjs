@@ -24,12 +24,23 @@ try {
     applied_at timestamptz NOT NULL DEFAULT now()
   )`);
   for (const name of files) {
-    const sql = await readFile(new URL(`../packages/database/migrations/${name}`, import.meta.url), 'utf8');
+    const sql = await readFile(
+      new URL(`../packages/database/migrations/${name}`, import.meta.url),
+      'utf8',
+    );
     const sha256 = createHash('sha256').update(sql).digest('hex');
-    const existing = (
-      await client.query('SELECT sha256 FROM schema_migrations WHERE name=$1', [name])
-    ).rows[0];
-    if (existing) {
+    const existing = /** @type {unknown} */ (
+      (await client.query('SELECT sha256 FROM schema_migrations WHERE name=$1', [name]))
+        .rows[0]
+    );
+    if (existing !== undefined) {
+      if (
+        typeof existing !== 'object' ||
+        existing === null ||
+        !('sha256' in existing) ||
+        typeof existing.sha256 !== 'string'
+      )
+        throw new Error(`Migration ${name} has an invalid checksum record`);
       if (existing.sha256 !== sha256)
         throw new Error(`Migration ${name} changed after it was applied`);
       continue;
@@ -49,6 +60,8 @@ try {
     }
   }
 } finally {
-  await client.query('SELECT pg_advisory_unlock(8199165446117740614)').catch(() => undefined);
+  await client
+    .query('SELECT pg_advisory_unlock(8199165446117740614)')
+    .catch(() => undefined);
   await client.end();
 }

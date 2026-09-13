@@ -1,4 +1,5 @@
 import type { CheckoutInput } from '@talla/commerce';
+import { conceal } from '@talla/sensitive';
 
 const sizes = new Set(['XS', 'S', 'M', 'L', 'XL', 'XXL']);
 
@@ -48,9 +49,9 @@ export function checkoutInput(value: unknown): CheckoutInput {
     privacyNoticeVersion: input['privacyNoticeVersion'],
     lines,
     buyer: {
-      name: buyerValue['name'],
-      phone: buyerValue['phone'],
-      address: buyerValue['address'],
+      name: conceal(buyerValue['name']),
+      phone: conceal(buyerValue['phone']),
+      address: conceal(buyerValue['address']),
     },
   };
 }

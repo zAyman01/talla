@@ -122,9 +122,15 @@ it('places an order once, encrypts PII and replays the same receipt without anot
     });
     expect(JSON.stringify(request.buyer)).not.toContain(BUYER_PHONE);
     expect(() => privacy.open(row.buyer_ciphertext, 'other-tenant')).toThrow();
-    expect(
-      JSON.stringify((await sql.query('SELECT details FROM audit_log')).rows),
-    ).not.toContain(BUYER_PHONE);
+    const auditRows = (
+      await sql.query<{ details: Record<string, unknown> }>(
+        'SELECT details FROM audit_log',
+      )
+    ).rows;
+    expect(auditRows[0]?.details).toMatchObject({
+      privacyNoticeVersion: '2026-09-09',
+    });
+    expect(JSON.stringify(auditRows)).not.toContain(BUYER_PHONE);
   });
 });
 it('merges duplicate lines so they cannot oversell stock', async () => {

@@ -40,7 +40,10 @@ export function createOwnerAuth(dependencies: Dependencies): OwnerAuth {
   if (dependencies.secret.byteLength < 32)
     throw new Error('Owner session secret must be at least 32 bytes');
   const now = dependencies.now ?? (() => new Date());
-  async function owner(tenantId: string, phone: string): Promise<OwnerSession | undefined> {
+  async function owner(
+    tenantId: string,
+    phone: string,
+  ): Promise<OwnerSession | undefined> {
     if (!phonePattern.test(phone)) return undefined;
     return dependencies.database.tenant(tenantId, async (sql) => {
       const row = (
@@ -67,7 +70,14 @@ export function createOwnerAuth(dependencies: Dependencies): OwnerAuth {
           `INSERT INTO owner_sessions
             (tenant_id,id,owner_id,token_hash,expires_at,last_seen_at,created_at)
            VALUES($1,$2,$3,$4,$5,$6,$6)`,
-          [tenantId, id, activeOwner.ownerId, hash(dependencies.secret, value), expiresAt, createdAt],
+          [
+            tenantId,
+            id,
+            activeOwner.ownerId,
+            hash(dependencies.secret, value),
+            expiresAt,
+            createdAt,
+          ],
         );
       });
       return { value, expiresAt: expiresAt.toISOString() };

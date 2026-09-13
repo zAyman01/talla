@@ -27,6 +27,8 @@ export interface CheckoutInput {
   readonly buyer: Buyer;
   readonly phoneToken: string;
   readonly cohort: 'viewer' | 'control';
+  /** Privacy notice accepted at the request boundary, when that surface records it. */
+  readonly privacyNoticeVersion?: '2026-09-09';
 }
 export interface CheckoutReceipt {
   readonly id: string;
@@ -188,6 +190,7 @@ async function placeOrder(
         phoneHash,
         total: input.expectedTotal,
         cohort: input.cohort,
+        privacyNoticeVersion: input.privacyNoticeVersion ?? null,
       }),
     )
     .digest('hex');
@@ -268,6 +271,9 @@ async function placeOrder(
         JSON.stringify({
           total: receipt.total,
           itemCount: lines.reduce((n, l) => n + l.quantity, 0),
+          ...(input.privacyNoticeVersion
+            ? { privacyNoticeVersion: input.privacyNoticeVersion }
+            : {}),
         }),
       ],
     );

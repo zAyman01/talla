@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { chromium } from 'playwright-core';
 import lighthouse from 'lighthouse';
-import { gateEnabled, storefront } from '../support/browser.ts';
+import { gateEnabled, launchChromium, storefront } from '../support/browser.ts';
 
 /**
  * The performance gate (spec 11.1).
@@ -62,7 +61,7 @@ describe.skipIf(!gateEnabled)('performance budgets, spec 11.1', () => {
     // Lighthouse drives Chrome over the DevTools protocol, so it attaches to the same
     // browser build every other gate uses rather than downloading a second one
     // (ADR-0023).
-    const browser = await chromium.launch({ args: ['--remote-debugging-port=9222'] });
+    const browser = await launchChromium(['--remote-debugging-port=9222']);
     try {
       const run = await lighthouse(
         storefront('/'),

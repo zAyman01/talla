@@ -3,7 +3,7 @@ import { PGlite } from '@electric-sql/pglite';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { createPrivacyBox, tenantTransaction } from '@talla/database';
 import type { Database } from '@talla/database';
-import { createOwnerAuth } from '../index.ts';
+import { createOwnerAuth } from '../internal/owner-auth.ts';
 
 const tenant = '11111111-1111-4111-8111-111111111111';
 const ownerId = '55555555-5555-4555-8555-555555555555';
@@ -11,12 +11,15 @@ const phone = '+201000000000';
 const db = new PGlite();
 const database: Database = {
   tenant: (tenantId, work) => tenantTransaction(db, tenantId, work),
+  platform: () => {
+    throw new Error('Legacy tenant-owner authentication must stay tenant scoped');
+  },
   close: () => db.close(),
 };
 const privacy = createPrivacyBox(new Uint8Array(32).fill(1), new Uint8Array(32).fill(2));
 
 beforeAll(async () => {
-  for (const migration of ['001-initial.sql', '003-owner-sessions.sql'])
+  for (const migration of ['001-initial.sql', '004-owner-sessions.sql'])
     await db.exec(
       await readFile(
         new URL(`../../../packages/database/migrations/${migration}`, import.meta.url),

@@ -52,6 +52,15 @@ export interface BrowserSession {
   close(): Promise<void>;
 }
 
+/** CI uses the pinned Playwright download; local gates may opt into an installed Chrome. */
+export function launchChromium(args: readonly string[] = []): Promise<Browser> {
+  const executablePath = process.env['TALLA_GATE_BROWSER_PATH']?.trim();
+  return chromium.launch({
+    args: [...args],
+    ...(executablePath ? { executablePath } : {}),
+  });
+}
+
 /**
  * Open a page on the reference profile.
  *
@@ -61,7 +70,7 @@ export interface BrowserSession {
 export async function openReferencePage(
   args: readonly string[] = [],
 ): Promise<BrowserSession> {
-  const browser = await chromium.launch({ args: [...args] });
+  const browser = await launchChromium(args);
   const context = await browser.newContext({
     ...REFERENCE_DEVICE,
     // The storefront is Arabic first and right to left. A gate running in an English

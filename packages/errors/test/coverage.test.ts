@@ -1,4 +1,5 @@
 import { readdir, readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { errorCatalog } from '../src/index.ts';
 import type { ErrorCode } from '../src/index.ts';
@@ -79,7 +80,7 @@ const repoRoot = new URL('../../../', import.meta.url);
 async function codesRaisedInTree(): Promise<ReadonlySet<string>> {
   const raised = new Set<string>();
   for (const root of ROOTS) {
-    for (const path of await sourceFiles(new URL(root, repoRoot).pathname.slice(1))) {
+    for (const path of await sourceFiles(fileURLToPath(new URL(`${root}/`, repoRoot)))) {
       if (path.endsWith('packages/errors/src/catalog.ts')) continue;
       if (path.includes('.test.')) continue;
       const source = await readFile(path, 'utf8');

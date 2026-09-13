@@ -124,10 +124,12 @@ describe('row-level security coverage', () => {
       'jobs',
       'order_lines',
       'orders',
+      'owner_sessions',
       'owner_tenants',
       'phone_challenges',
       'pins',
       'stock',
+      'store_owners',
     ]);
   });
 

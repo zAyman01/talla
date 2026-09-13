@@ -12,6 +12,9 @@ const hidden = '44444444-4444-4444-8444-444444444444';
 const db = new PGlite();
 const database: Database = {
   tenant: (tenantId, work) => tenantTransaction(db, tenantId, work),
+  platform: () => {
+    throw new Error('Catalog reads must stay tenant scoped');
+  },
   close: () => db.close(),
 };
 

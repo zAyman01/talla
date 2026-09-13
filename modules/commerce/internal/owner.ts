@@ -9,7 +9,11 @@ export interface OwnerOrder {
   readonly total: number;
   readonly status: OrderStatus;
   readonly createdAt: string;
-  readonly buyer: { readonly name: string; readonly phone: string; readonly address: string };
+  readonly buyer: {
+    readonly name: string;
+    readonly phone: string;
+    readonly address: string;
+  };
   readonly lines: readonly {
     readonly name: string;
     readonly size: string;
@@ -145,17 +149,17 @@ export async function updateInventory(
       throw new Error('ORDER_INVALID_INPUT');
   await database.tenant(tenantId, async (sql) => {
     const existing = (
-      await sql.query<{ status: string }>('SELECT status FROM garments WHERE id=$1 FOR UPDATE', [
-        garmentId,
-      ])
+      await sql.query<{ status: string }>(
+        'SELECT status FROM garments WHERE id=$1 FOR UPDATE',
+        [garmentId],
+      )
     ).rows[0];
     if (!existing || !['ready', 'archived'].includes(existing.status))
       throw new Error('AUTH_FORBIDDEN');
-    await sql.query('UPDATE garments SET price=$1,status=$2,stock_epoch=stock_epoch+1 WHERE id=$3', [
-      input.price,
-      input.status,
-      garmentId,
-    ]);
+    await sql.query(
+      'UPDATE garments SET price=$1,status=$2,stock_epoch=stock_epoch+1 WHERE id=$3',
+      [input.price, input.status, garmentId],
+    );
     for (const [size, quantity] of Object.entries(input.stock))
       await sql.query(
         `INSERT INTO stock(tenant_id,garment_id,size,quantity) VALUES($1,$2,$3,$4)
@@ -165,7 +169,12 @@ export async function updateInventory(
     await sql.query(
       `INSERT INTO audit_log(tenant_id,actor_id,action,entity_id,details)
        VALUES($1,$2,'inventory.updated',$3,$4)`,
-      [tenantId, actorId, garmentId, JSON.stringify({ price: input.price, status: input.status, stock: input.stock })],
+      [
+        tenantId,
+        actorId,
+        garmentId,
+        JSON.stringify({ price: input.price, status: input.status, stock: input.stock }),
+      ],
     );
   });
 }

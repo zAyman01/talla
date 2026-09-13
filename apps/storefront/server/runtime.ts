@@ -153,12 +153,9 @@ function createRuntime(): StoreRuntime {
   });
   const checkout = createCheckout({
     database,
-    verifyPhone: (token, buyerPhone, tenantId) =>
-      Promise.resolve(
-        verifyPhoneToken(phoneSecret, privacy.phoneHash, token, buyerPhone, tenantId),
-      ),
-    sealBuyer: privacy.seal,
-    phoneHash: privacy.phoneHash,
+    verifyPhone: (token, phoneHash, tenantId) =>
+      Promise.resolve(verifyPhoneToken(phoneSecret, token, phoneHash, tenantId)),
+    sealBuyer: privacy.sealBuyer,
   });
   return {
     database,

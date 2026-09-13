@@ -1,4 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
+import { Buffer } from 'node:buffer';
 import { createHmac, randomBytes } from 'node:crypto';
 import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
@@ -49,10 +50,14 @@ if (!localEnvironment.includes('TALLA_OWNER_SESSION_KEY=')) {
   writeFileSync(envPath, localEnvironment, { mode: 0o600 });
 }
 
-execFileSync('docker', ['compose', 'up', '--detach', '--wait'], {
-  cwd: root,
-  stdio: 'inherit',
-});
+execFileSync(
+  'docker',
+  ['compose', '-f', 'compose.local.yaml', 'up', '--detach', '--wait'],
+  {
+    cwd: root,
+    stdio: 'inherit',
+  },
+);
 
 const migrationUrl =
   'postgresql://talla_migration:talla_migration_local@127.0.0.1:55432/talla';
@@ -65,6 +70,8 @@ execFileSync(
   'docker',
   [
     'compose',
+    '-f',
+    'compose.local.yaml',
     'exec',
     '-T',
     'postgres',
@@ -96,6 +103,8 @@ execFileSync(
   'docker',
   [
     'compose',
+    '-f',
+    'compose.local.yaml',
     'exec',
     '-T',
     'postgres',
