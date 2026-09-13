@@ -20,6 +20,7 @@ out/
 .env
 .env.*
 !.env.example
+!.env.sms.example
 *.pem
 *.key
 !**/fixtures/**/*.key

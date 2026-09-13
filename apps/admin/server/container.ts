@@ -4,6 +4,7 @@ import type { Database, PrivacyBox } from '@talla/database';
 import { reveal } from '@talla/sensitive';
 import { createLogger } from '@talla/observability';
 import type { Logger } from '@talla/observability';
+import { createTwilioSmsSender } from '@talla/otp';
 import { createOwnerAuth } from '@talla/tenancy';
 import type { OwnerAuth } from '@talla/tenancy';
 import { createAdminRequests } from './request.ts';
@@ -51,32 +52,31 @@ export function container(): AdminContainer {
   const privacy = createPrivacyBox(reveal(config.encryptionKey), reveal(config.indexKey));
   const logger = createLogger();
 
+  const sendCode =
+    config.otpChannel === 'sms'
+      ? createTwilioSmsSender(
+          config.twilio ??
+            (() => {
+              throw new Error('Configuration reader returned no Twilio SMS settings');
+            })(),
+        )
+      : (phone: string, code: string): Promise<void> => {
+          // The code is the point of this channel. The number is not: the developer already
+          // knows which one they typed, and writing it here would put a phone number in a log
+          // line to save nobody anything (spec 16.5). A hash prefix is enough to tell two
+          // concurrent sign-ins apart.
+          logger.warn('auth.otp_issued_to_log', {
+            code,
+            phone: privacy.phoneHash(phone).slice(0, 8),
+          });
+          return Promise.resolve();
+        };
+
   const auth = createOwnerAuth({
     database,
     secret: reveal(config.phoneSecret),
     phoneHash: privacy.phoneHash,
-    /**
-     * The delivery adapter. `log` is refused in production by `packages/config`, because
-     * codes on stdout are an authentication bypass for anyone who can read a deployment
-     * log. The SMS and WhatsApp adapters are Stage O work; until then only development
-     * and staging can sign in, which is the correct failure.
-     */
-    sendCode: (phone, code) => {
-      if (config.otpChannel !== 'log') {
-        return Promise.reject(
-          new Error(`OTP channel ${config.otpChannel} has no adapter yet`),
-        );
-      }
-      // The code is the point of this channel. The number is not: the developer already
-      // knows which one they typed, and writing it here would put a phone number in a log
-      // line to save nobody anything (spec 16.5). A hash prefix is enough to tell two
-      // concurrent sign-ins apart.
-      logger.warn('auth.otp_issued_to_log', {
-        code,
-        phone: privacy.phoneHash(phone).slice(0, 8),
-      });
-      return Promise.resolve();
-    },
+    sendCode,
   });
 
   instance = {

@@ -133,6 +133,7 @@ jobs:
       - name: Bring up the stack
         run: |
           cp .env.example .env
+          cp .env.sms.example .env.sms
           echo '127.0.0.1 nasij.localhost admin.localhost' | sudo tee -a /etc/hosts
           docker compose up -d --wait
           docker compose run --rm seed

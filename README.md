@@ -13,9 +13,10 @@ outfit buys three pieces instead of one.
 
 ## Status
 
-The buyer storefront and the protected commerce path are implemented as a production
-MVP. Real garment solving and pilot evidence remain gated on store photography, authored
-garment blocks, and measurements from the reference phone.
+The buyer storefront, owner application, protected commerce path, browser gates, and
+operations tooling are implemented as a production MVP. Real garment solving and pilot
+evidence remain gated on store photography, authored garment blocks, and measurements
+from the reference phone.
 
 The design is specified in full in
 **[the spec](docs/superpowers/specs/2026-09-04-talla-design.md)**: product, architecture,
@@ -28,19 +29,22 @@ The authority order for the spec, schema, tokens, and decisions is recorded in
 
 ## Run locally
 
-Docker and Node.js 24 or newer are required. The setup command starts PostgreSQL, applies
-the forward migrations, seeds the licensed reference catalog, and writes an ignored local
-environment file with random privacy keys.
+Docker, Node.js 24 or newer, and pnpm 11 or newer are required.
 
 ```sh
 pnpm install
-pnpm local:setup
-pnpm dev
+cp .env.example .env
+cp .env.sms.example .env.sms
+docker compose up -d --wait
+docker compose run --rm seed
 ```
 
-Open `http://127.0.0.1:3000`. The local-only phone code is `123456`. Stop PostgreSQL with
-`pnpm local:down`. Production settings are documented in
-`apps/storefront/.env.example`; development SMS mode is rejected in production.
+Open `http://nasij.localhost:3000` for the seeded store and
+`http://admin.localhost:3001` for owner sign in. The production images use Twilio when
+`TALLA_OTP_CHANNEL=sms`; replace the four placeholders in `.env.sms` to exercise real
+delivery. Only storefront and admin receive that file. To use log OTP in local development,
+run `node scripts/dev.ts storefront` or
+`node scripts/dev.ts admin` on the host. Production rejects log OTP by design.
 
 ## The shape of it
 

@@ -19,7 +19,7 @@ import { conceal, type Sensitive } from '@talla/sensitive';
  * no code for it because there is no caller to hand it to: the process must not start.
  */
 
-export type OtpChannel = 'log' | 'sms' | 'whatsapp';
+export type OtpChannel = 'log' | 'sms';
 export type NodeEnv = 'development' | 'test' | 'production';
 
 export interface AssetStorageConfig {
@@ -27,6 +27,13 @@ export interface AssetStorageConfig {
   readonly bucket: string;
   readonly accessKey: Sensitive<string>;
   readonly secretKey: Sensitive<string>;
+}
+
+export interface TwilioSmsConfig {
+  readonly accountSid: string;
+  readonly apiKeySid: string;
+  readonly apiKeySecret: Sensitive<string>;
+  readonly messagingServiceSid: string;
 }
 
 export interface Config {
@@ -45,6 +52,8 @@ export interface Config {
   readonly storefrontRootDomain: string;
   readonly asset: AssetStorageConfig;
   readonly otpChannel: OtpChannel;
+  /** Present exactly when the selected OTP channel is SMS. */
+  readonly twilio: TwilioSmsConfig | undefined;
   /**
    * Days after fulfilment or cancellation before a buyer's contact details are erased.
    *
@@ -61,7 +70,7 @@ const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 const HOST =
   /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*(?::\d{1,5})?$/;
 const SECRET_BYTES = 32;
-const OTP_CHANNELS: readonly OtpChannel[] = ['log', 'sms', 'whatsapp'];
+const OTP_CHANNELS: readonly OtpChannel[] = ['log', 'sms'];
 const NODE_ENVS: readonly NodeEnv[] = ['development', 'test', 'production'];
 
 export function readConfig(env: Env): Config {
@@ -185,6 +194,50 @@ export function readConfig(env: Env): Config {
     problems.push('TALLA_OTP_CHANNEL must not be log when NODE_ENV is production');
   }
 
+  let twilio: TwilioSmsConfig | undefined;
+  if (otpChannel === 'sms') {
+    const accountSid = present('TALLA_TWILIO_ACCOUNT_SID');
+    const apiKeySid = present('TALLA_TWILIO_API_KEY_SID');
+    const apiKeySecret = present('TALLA_TWILIO_API_KEY_SECRET');
+    const messagingServiceSid = present('TALLA_TWILIO_MESSAGING_SERVICE_SID');
+
+    if (accountSid !== undefined && !/^AC[a-f0-9]{32}$/i.test(accountSid)) {
+      problems.push('TALLA_TWILIO_ACCOUNT_SID is not a Twilio account SID');
+    }
+    if (apiKeySid !== undefined && !/^SK[a-f0-9]{32}$/i.test(apiKeySid)) {
+      problems.push('TALLA_TWILIO_API_KEY_SID is not a Twilio API key SID');
+    }
+    if (apiKeySecret !== undefined && apiKeySecret.length < 20) {
+      problems.push('TALLA_TWILIO_API_KEY_SECRET must be at least 20 characters');
+    }
+    if (
+      messagingServiceSid !== undefined &&
+      !/^MG[a-f0-9]{32}$/i.test(messagingServiceSid)
+    ) {
+      problems.push(
+        'TALLA_TWILIO_MESSAGING_SERVICE_SID is not a Twilio messaging service SID',
+      );
+    }
+
+    if (
+      accountSid !== undefined &&
+      /^AC[a-f0-9]{32}$/i.test(accountSid) &&
+      apiKeySid !== undefined &&
+      /^SK[a-f0-9]{32}$/i.test(apiKeySid) &&
+      apiKeySecret !== undefined &&
+      apiKeySecret.length >= 20 &&
+      messagingServiceSid !== undefined &&
+      /^MG[a-f0-9]{32}$/i.test(messagingServiceSid)
+    ) {
+      twilio = Object.freeze({
+        accountSid,
+        apiKeySid,
+        apiKeySecret: conceal(apiKeySecret),
+        messagingServiceSid,
+      });
+    }
+  }
+
   // Distinct keys, checked only once all four are present so a missing variable reports
   // as missing rather than as a duplicate.
   const secrets = [encryptionKey, indexKey, phoneSecret, sessionSecret];
@@ -256,6 +309,7 @@ export function readConfig(env: Env): Config {
       secretKey: conceal(assetSecretKey),
     }),
     otpChannel,
+    twilio,
     retentionDays,
   });
 }

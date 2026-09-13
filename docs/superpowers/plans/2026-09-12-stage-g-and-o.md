@@ -155,6 +155,18 @@ they are visible rather than discovered late.
       is chosen, which is a deployment decision and not a code one.
 - [ ] Staging: one seeded fake tenant, plus one pilot's data with buyer PII redacted.
 
+### O5. Production OTP delivery
+
+- [x] Buyer and owner codes use one Twilio Messaging Services adapter when the SMS channel
+      is selected (ADR-0024).
+- [x] SMS credentials are validated together at boot, and the API key secret remains
+      concealed until the carrier request is assembled.
+- [x] Provider and network failures collapse to `AUTH_OTP_DELIVERY_FAILED` without putting
+      the phone number, code, credential, or carrier response in logs or error payloads.
+- [ ] Exercise a delivery to a designated pilot test phone and record the carrier result.
+      This requires deployment credentials and an authorized recipient; unit tests use a
+      local HTTP double and send nothing.
+
 ---
 
 ## Exit gates
@@ -163,5 +175,6 @@ they are visible rather than discovered late.
 blocks merge, with no allowlist of known failures.
 
 **Stage O.** A restore drill completed and recorded; an export and an erasure exercised
-end to end; retention running on a schedule; the runbook written. The four items in O4 are
-tracked elsewhere and are not this plan's to close.
+end to end; retention running on a schedule; the runbook written; and one authorized pilot
+phone has received a code through the production SMS path. The five items in O4 are tracked
+elsewhere and are not this plan's to close.

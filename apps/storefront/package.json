@@ -30,6 +30,7 @@
     "@talla/http": "workspace:*",
     "@talla/errors": "workspace:*",
     "@talla/observability": "workspace:*",
+    "@talla/otp": "workspace:*",
     "@talla/sensitive": "workspace:*",
     "@talla/config": "workspace:*",
     "@talla/commerce": "workspace:*",

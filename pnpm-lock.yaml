@@ -77,6 +77,9 @@ importers:
       '@talla/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      '@talla/otp':
+        specifier: workspace:*
+        version: link:../../packages/otp
       '@talla/sensitive':
         specifier: workspace:*
         version: link:../../packages/sensitive
@@ -150,6 +153,9 @@ importers:
       '@talla/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      '@talla/otp':
+        specifier: workspace:*
+        version: link:../../packages/otp
       '@talla/sensitive':
         specifier: workspace:*
         version: link:../../packages/sensitive
@@ -422,6 +428,19 @@ importers:
 
   packages/observability:
     dependencies:
+      '@talla/sensitive':
+        specifier: workspace:*
+        version: link:../sensitive
+    devDependencies:
+      typescript:
+        specifier: ^5.9.2
+        version: 5.9.3
+
+  packages/otp:
+    dependencies:
+      '@talla/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@talla/sensitive':
         specifier: workspace:*
         version: link:../sensitive

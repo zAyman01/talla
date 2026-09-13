@@ -71,6 +71,7 @@ expected to work unchanged on Linux and macOS.
 ```bash
 pnpm install
 cp .env.example .env          # works as written for local development
+cp .env.sms.example .env.sms  # non-working local Twilio placeholders
 docker compose up -d --wait
 docker compose run --rm seed
 ```
@@ -91,8 +92,9 @@ node scripts/dev.ts storefront     # or: admin
 ```
 
 This exists because Next reads a `.env` next to the app it is serving and this repository
-keeps one `.env` at the root, which `docker compose` hands to five services. Use it rather
-than `next dev` directly.
+keeps shared configuration at the root. Compose gives `.env.sms` only to storefront and
+admin, while `scripts/dev.ts` loads the shared root `.env` for the selected app. Use it rather than
+`next dev` directly.
 
 ### The tests
 
@@ -325,9 +327,10 @@ build.
 **Next's standalone server forces `NODE_ENV=production`** whatever the environment says. So
 the compose images can never use `TALLA_OTP_CHANNEL=log`, because config refuses that in
 production on purpose: OTP codes in a deployment log are an authentication bypass for
-everyone who can read the log. Compose names the channel `sms`, which has **no adapter**, so
-phone verification fails at the send inside Docker. Run `node scripts/dev.ts storefront` on
-the host when you need that path.
+everyone who can read the log. Compose selects the Twilio-backed `sms` channel and loads
+credentials from `.env.sms`; its checked-in values are deliberately non-working placeholders.
+Supply authorized test credentials to exercise delivery, or run `node scripts/dev.ts storefront`
+on the host to use the development-only log channel.
 
 **`talla_app` is `NOLOGIN` by design.** Migration 001 creates it without a password and says
 the credential is provisioned out of band. `docker/postgres-init.sql` is that step for

@@ -4,6 +4,7 @@ import type { Database, PrivacyBox } from '@talla/database';
 import { reveal } from '@talla/sensitive';
 import { createLogger } from '@talla/observability';
 import type { Logger } from '@talla/observability';
+import { createTwilioSmsSender } from '@talla/otp';
 import {
   createCheckout,
   createPhoneVerification,
@@ -49,24 +50,29 @@ export function container(): StorefrontContainer {
   const logger = createLogger();
   const phoneSecret = reveal(config.phoneSecret);
 
+  const sendCode =
+    config.otpChannel === 'sms'
+      ? createTwilioSmsSender(
+          config.twilio ??
+            (() => {
+              throw new Error('Configuration reader returned no Twilio SMS settings');
+            })(),
+        )
+      : (number: string, code: string): Promise<void> => {
+          // The code, never the number. A buyer's phone in a deployment log is the leak the
+          // whole `Sensitive` wrapper exists to prevent (spec 16.5).
+          logger.warn('commerce.otp_issued_to_log', {
+            code,
+            phone: privacy.phoneHash(number).slice(0, 8),
+          });
+          return Promise.resolve();
+        };
+
   const phone = createPhoneVerification({
     database,
     secret: phoneSecret,
     phoneHash: privacy.phoneHash,
-    sendCode: (number, code) => {
-      if (config.otpChannel !== 'log') {
-        return Promise.reject(
-          new Error(`OTP channel ${config.otpChannel} has no adapter yet`),
-        );
-      }
-      // The code, never the number. A buyer's phone in a deployment log is the leak the
-      // whole `Sensitive` wrapper exists to prevent (spec 16.5).
-      logger.warn('commerce.otp_issued_to_log', {
-        code,
-        phone: privacy.phoneHash(number).slice(0, 8),
-      });
-      return Promise.resolve();
-    },
+    sendCode,
   });
 
   instance = {

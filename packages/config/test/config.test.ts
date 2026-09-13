@@ -154,6 +154,57 @@ describe('readConfig problem reporting', () => {
     expect(() => readConfig({ ...valid(), NODE_ENV: 'development' })).not.toThrow();
   });
 
+  it('refuses an unimplemented delivery channel at boot', () => {
+    expect(() => readConfig({ ...valid(), TALLA_OTP_CHANNEL: 'whatsapp' })).toThrow(
+      /TALLA_OTP_CHANNEL must be one of log, sms/,
+    );
+  });
+
+  it('requires valid Twilio settings when SMS delivery is selected', () => {
+    const missing = { ...valid(), TALLA_OTP_CHANNEL: 'sms' };
+    expect(() => readConfig(missing)).toThrow(/TALLA_TWILIO_ACCOUNT_SID is missing/);
+
+    const configured = readConfig({
+      ...missing,
+      TALLA_TWILIO_ACCOUNT_SID: `AC${'a'.repeat(32)}`,
+      TALLA_TWILIO_API_KEY_SID: `SK${'b'.repeat(32)}`,
+      TALLA_TWILIO_API_KEY_SECRET: 'secret-value-with-enough-length',
+      TALLA_TWILIO_MESSAGING_SERVICE_SID: `MG${'c'.repeat(32)}`,
+    });
+    expect(configured.twilio?.accountSid).toBe(`AC${'a'.repeat(32)}`);
+    expect(configured.twilio?.apiKeySecret.toString()).toBe('[sensitive]');
+  });
+
+  it('reports all malformed Twilio settings without exposing their values', () => {
+    const env = {
+      ...valid(),
+      TALLA_OTP_CHANNEL: 'sms',
+      TALLA_TWILIO_ACCOUNT_SID: 'bad-account-value',
+      TALLA_TWILIO_API_KEY_SID: 'bad-key-value',
+      TALLA_TWILIO_API_KEY_SECRET: 'short-secret',
+      TALLA_TWILIO_MESSAGING_SERVICE_SID: 'bad-service-value',
+    };
+
+    let message = '';
+    try {
+      readConfig(env);
+    } catch (error) {
+      message = error instanceof Error ? error.message : String(error);
+    }
+    for (const name of [
+      'TALLA_TWILIO_ACCOUNT_SID',
+      'TALLA_TWILIO_API_KEY_SID',
+      'TALLA_TWILIO_API_KEY_SECRET',
+      'TALLA_TWILIO_MESSAGING_SERVICE_SID',
+    ]) {
+      expect(message).toContain(name);
+    }
+    expect(message).not.toContain('bad-account-value');
+    expect(message).not.toContain('bad-key-value');
+    expect(message).not.toContain('short-secret');
+    expect(message).not.toContain('bad-service-value');
+  });
+
   it('accepts a host with a port so local development needs no special case', () => {
     const env = valid();
     env['TALLA_ADMIN_HOST'] = 'admin.localhost:3001';

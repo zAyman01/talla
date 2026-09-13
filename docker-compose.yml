@@ -1,6 +1,7 @@
 # A working Talla from a clean clone:
 #
-#   cp .env.example .env && docker compose up --build
+#   cp .env.example .env && cp .env.sms.example .env.sms
+#   docker compose up --build
 #   docker compose run --rm seed
 #
 # Five services because that is what the system is (spec section 6): a web application,
@@ -62,7 +63,7 @@ services:
     build:
       context: .
       dockerfile: apps/storefront/Dockerfile
-    env_file: .env
+    env_file: [.env, .env.sms]
     environment:
       TALLA_DATABASE_URL: postgresql://talla_app:local-development-only@postgres:5432/talla_dev
       PORT: '3000'
@@ -74,10 +75,10 @@ services:
       # Next's standalone server sets NODE_ENV=production itself, whatever the environment
       # says, and packages/config refuses the `log` OTP channel in production because codes
       # in a deployment log are an authentication bypass for everyone who can read it. So
-      # these images cannot print codes, and the channel is named honestly instead: there is
-      # no SMS provider chosen yet, so phone verification fails at the send. Everything that
-      # does not need a code works. For the paths that do, run the apps on the host with
-      # `node scripts/dev.ts storefront`, where NODE_ENV really is development.
+      # these images cannot print codes. The example environment carries non-working,
+      # valid-shaped Twilio placeholders, so phone verification fails safely until a local
+      # operator supplies real test credentials. For log delivery, run the app on the host
+      # with `node scripts/dev.ts storefront`, where NODE_ENV really is development.
       TALLA_OTP_CHANNEL: sms
     ports:
       - '3000:3000'
@@ -98,7 +99,7 @@ services:
     build:
       context: .
       dockerfile: apps/admin/Dockerfile
-    env_file: .env
+    env_file: [.env, .env.sms]
     environment:
       TALLA_DATABASE_URL: postgresql://talla_app:local-development-only@postgres:5432/talla_dev
       PORT: '3001'
@@ -110,10 +111,10 @@ services:
       # Next's standalone server sets NODE_ENV=production itself, whatever the environment
       # says, and packages/config refuses the `log` OTP channel in production because codes
       # in a deployment log are an authentication bypass for everyone who can read it. So
-      # these images cannot print codes, and the channel is named honestly instead: there is
-      # no SMS provider chosen yet, so phone verification fails at the send. Everything that
-      # does not need a code works. For the paths that do, run the apps on the host with
-      # `node scripts/dev.ts storefront`, where NODE_ENV really is development.
+      # these images cannot print codes. The example environment carries non-working,
+      # valid-shaped Twilio placeholders, so phone verification fails safely until a local
+      # operator supplies real test credentials. For log delivery, run the app on the host
+      # with `node scripts/dev.ts admin`, where NODE_ENV really is development.
       TALLA_OTP_CHANNEL: sms
     ports:
       - '3001:3001'

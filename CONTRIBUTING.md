@@ -100,7 +100,8 @@ without one, so they need the stack up and the browser installed:
 
 ```
 pnpm exec playwright-core install chromium chromium-headless-shell
-cp .env.example .env && docker compose up -d --wait && docker compose run --rm seed
+cp .env.example .env && cp .env.sms.example .env.sms
+docker compose up -d --wait && docker compose run --rm seed
 TALLA_GATE_URL=http://nasij.localhost:3000 pnpm gates
 ```
 
