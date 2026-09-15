@@ -608,6 +608,18 @@ html {
 .fit-basis {
   margin-top: var(--space-4);
 }
+.measurement-source {
+  min-height: var(--tap-min);
+  margin-top: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+.chart-note {
+  margin-top: var(--space-2);
+  font-size: var(--text-2xs);
+}
 .stock-line {
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--line);
@@ -679,6 +691,21 @@ html {
 .catalog-grid {
   display: grid;
   gap: var(--space-6);
+}
+.catalog-filters {
+  margin-bottom: var(--space-4);
+  display: grid;
+  gap: var(--space-2);
+}
+.catalog-filters > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.catalog-filters button {
+  flex: 1;
+  padding-inline: var(--space-3);
+  font-size: var(--text-xs);
 }
 .product-card {
   overflow: hidden;
@@ -752,6 +779,20 @@ html {
 .product-copy .price {
   margin-top: var(--space-2);
   font-weight: var(--weight-heading);
+}
+.product-color {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+.product-color i {
+  width: var(--space-4);
+  height: var(--space-4);
+  flex: none;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-full);
 }
 .outfit-action {
   position: fixed;

@@ -3,6 +3,8 @@ import type { BodySize } from '@talla/shared';
 import type { GarmentBlockId, MeshData } from '../index.ts';
 import {
   BODY_SIZES,
+  FIGURE_BOUNDS,
+  FIGURE_HEIGHT_M,
   GARMENT_BLOCKS,
   LANDMARK,
   bodyMesh,
@@ -70,7 +72,27 @@ describe('the mannequin', () => {
         top = Math.max(top, positions[i] ?? 0);
       return top;
     });
-    for (const height of heights) expect(height).toBeCloseTo(LANDMARK.neckTop, 6);
+    for (const height of heights) expect(height).toBeCloseTo(FIGURE_HEIGHT_M, 6);
+  });
+
+  it('is a complete retail form from sole to crown', () => {
+    for (const size of BODY_SIZES) {
+      const { positions } = bodyMesh(size);
+      let bottom = Infinity;
+      let top = -Infinity;
+      for (let i = 1; i < positions.length; i += 3) {
+        bottom = Math.min(bottom, positions[i] ?? Infinity);
+        top = Math.max(top, positions[i] ?? -Infinity);
+      }
+      expect(bottom).toBeCloseTo(FIGURE_BOUNDS.bottom, 6);
+      expect(top).toBeCloseTo(FIGURE_BOUNDS.top, 6);
+      const stations = bodyStations(size);
+      expect(stations.head[0]?.y).toBeLessThan(LANDMARK.neckTop);
+      expect(stations.head.at(-1)?.y).toBe(FIGURE_HEIGHT_M);
+      expect(stations.foot[0]?.centerZ).toBeGreaterThan(
+        stations.foot.at(-1)?.centerZ ?? Infinity,
+      );
+    }
   });
 
   it('produces one topology across sizes, which is what makes size a vertex blend', () => {
@@ -128,7 +150,8 @@ describe('garment blocks', () => {
           LANDMARK.thigh,
           LANDMARK.knee,
         ]) {
-          const onLeg = id === 'jeans-straight' && y < LANDMARK.crotch;
+          const definition = GARMENT_BLOCKS.find((candidate) => candidate.id === id);
+          const onLeg = definition?.slot === 'bottom' && y < LANDMARK.crotch;
           const source = onLeg ? stations.leg : stations.torso;
           const segments = onLeg ? stations.segments.limb : stations.segments.torso;
           const bodyGirth = girthAt(source, y, segments);
@@ -224,7 +247,9 @@ function girthAt(
 function coversHeight(id: GarmentBlockId, y: number): boolean {
   const definition = GARMENT_BLOCKS.find((b) => b.id === id);
   if (!definition) return false;
-  return id === 'tee-crew-relaxed' ? y >= definition.hemY : y <= 1.03;
+  return definition.slot === 'top'
+    ? y >= definition.hemY
+    : y >= definition.hemY && y <= 1.03;
 }
 
 describe('ring sampling', () => {

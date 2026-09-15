@@ -25,6 +25,7 @@ export { probeTier, readDeviceSignals } from './internal/probe.ts';
 export type {
   DressedGarment,
   MannequinScene,
+  MannequinView,
   SceneOptions,
   SceneStyle,
 } from './internal/scene.ts';

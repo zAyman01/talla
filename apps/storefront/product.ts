@@ -1,6 +1,31 @@
 import type { BodySize, Slot } from '@talla/shared';
 import type { GarmentBlockId } from '@talla/blocks';
 
+export interface CatalogMeasurement {
+  readonly key: string;
+  readonly label: string;
+  /** Kept as text so ranges and source anomalies are never silently changed. */
+  readonly value: string;
+  readonly unit?: string;
+}
+
+export interface CatalogSizeChartRow {
+  /** The label printed by the merchant, such as M/S or 2XL. */
+  readonly sourceLabel: string;
+  readonly measurements: readonly CatalogMeasurement[];
+}
+
+export interface CatalogSizeChart {
+  readonly rows: Readonly<Partial<Record<BodySize, CatalogSizeChartRow>>>;
+  readonly notes: readonly string[];
+  readonly sourceImageUrl?: string;
+}
+
+export interface CatalogSource {
+  readonly merchant: string;
+  readonly productUrl: string;
+}
+
 /**
  * One sellable garment, as the page needs it.
  *
@@ -24,6 +49,9 @@ export interface CatalogProduct {
    * saturated thing on the page, and its colour comes from the piece itself.
    */
   readonly colorHex: string;
+  readonly colorLabel?: string;
+  readonly sizeChart?: CatalogSizeChart;
+  readonly source?: CatalogSource;
   /** Only sizes with stock on hand. A size a buyer cannot have is not offered. */
   readonly sizes: readonly BodySize[];
 }

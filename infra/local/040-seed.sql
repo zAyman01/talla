@@ -1,6 +1,6 @@
 INSERT INTO tenants (id,subdomain,name_ar,name_en)
-VALUES ('11111111-1111-4111-8111-111111111111','demo','النسيج','Al Naseej')
-ON CONFLICT (id) DO NOTHING;
+VALUES ('11111111-1111-4111-8111-111111111111','demo','طلّة','Talla')
+ON CONFLICT (id) DO UPDATE SET name_ar=EXCLUDED.name_ar,name_en=EXCLUDED.name_en;
 
 INSERT INTO garments
   (tenant_id,id,name_ar,name_en,price,status,spec,published_assets)

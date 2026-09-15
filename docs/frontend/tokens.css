@@ -112,10 +112,9 @@
   --studio-light-color: #ffffff;
   --studio-ground-color: #777777;
 
-  /* The mannequin itself. Achromatic and a shade lighter than the stage, so the
-   * form separates from its backdrop without becoming the brightest thing on the
-   * page. It sits next to a garment all day, so it can carry no hue at all. */
-  --mannequin: #d2d2ce;
+  /* A near-black retail shell. Studio highlights reveal its shape while the neutral
+   * pigment keeps every garment colour visually honest. */
+  --mannequin: #111214;
   --content-max: 1200px;
 
   --tap-min: 44px;       /* minimum interactive target */
@@ -167,7 +166,7 @@
     --surface: #1f2124;
     --surface-sunken: #131416;
     --stage: #2b2c2e;
-    --mannequin: #5b5e62;
+    --mannequin: #111214;
     --line: #313336;
     --line-strong: #45484c;
 

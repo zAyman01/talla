@@ -131,7 +131,7 @@ export function ringAtHeight(rings: readonly Ring[], y: number): Ring {
 
 export interface LoftOptions {
   readonly segments: number;
-  /** Fill the first ring with a flat disc. A headless neck needs one, a hem does not. */
+  /** Fill the first ring with a flat disc. A closed body part needs one, a hem does not. */
   readonly capStart?: boolean;
   readonly capEnd?: boolean;
 }

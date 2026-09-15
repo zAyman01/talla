@@ -157,4 +157,47 @@ describe('toProduct', () => {
       expect(toProduct({ ...complete, spec: partial }), drop).toBeUndefined();
     }
   });
+
+  it('reads published catalog assets, source measurements and the expanded 3D blocks', () => {
+    const product = toProduct({
+      id: 'g2',
+      name_ar: 'قميص طويل',
+      price: 59900,
+      sizes: ['L'],
+      spec: {
+        block_id: 'tee-long-relaxed',
+        style: { slot: 'top', dominant_colors: ['#000000'] },
+      },
+      published_assets: {
+        catalog_image: { url: '/catalog/farid/top.webp', width: 720, height: 900 },
+        color_hex: '#17181a',
+        color_label: 'أسود',
+        source: {
+          merchant: 'Farid Store',
+          product_url: 'https://faridstore.site/products/top',
+        },
+        size_chart: {
+          rows: {
+            L: {
+              sourceLabel: 'L',
+              measurements: [{ key: 'width', label: 'العرض', value: '60', unit: 'سم' }],
+            },
+          },
+          notes: ['كما ورد في المصدر.'],
+        },
+      },
+    });
+
+    expect(product?.blockId).toBe('tee-long-relaxed');
+    expect(product?.image).toBe('/catalog/farid/top.webp');
+    expect(product?.colorLabel).toBe('أسود');
+    expect(product?.sizeChart?.rows.L?.sourceLabel).toBe('L');
+    expect(product?.sizeChart?.rows.L?.measurements[0]).toEqual({
+      key: 'width',
+      label: 'العرض',
+      value: '60',
+      unit: 'سم',
+    });
+    expect(product?.source?.merchant).toBe('Farid Store');
+  });
 });

@@ -13,7 +13,7 @@ if (!existsSync(envPath)) {
   const tenants = JSON.stringify({
     demo: {
       tenantId: '11111111-1111-4111-8111-111111111111',
-      name: 'النسيج',
+      name: 'طلّة',
     },
   });
   writeFileSync(

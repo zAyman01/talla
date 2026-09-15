@@ -85,6 +85,7 @@ export function Mannequin({ size, garments, onUnavailable }: MannequinProps): Re
       host: element,
       size,
       garments,
+      tier,
       style: sceneStyle(element),
       // A lost context in the Instagram WebView is expected, not exceptional. Fall back
       // to the photographs rather than leaving a blank canvas (spec 11.2).
@@ -136,6 +137,30 @@ export function Mannequin({ size, garments, onUnavailable }: MannequinProps): Re
         <div className="canvas-host" ref={host} />
       </div>
       <div className="viewer-controls">
+        <button
+          type="button"
+          onClick={() => {
+            scene.current?.setView('front');
+          }}
+        >
+          أمام
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            scene.current?.setView('side');
+          }}
+        >
+          جانب
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            scene.current?.setView('back');
+          }}
+        >
+          خلف
+        </button>
         <button
           type="button"
           onClick={() => {

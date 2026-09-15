@@ -1,21 +1,38 @@
-import { randomUUID } from 'node:crypto';
-import { createHmac } from 'node:crypto';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { Pool } from 'pg';
 import { runMigrations } from '../packages/database/src/migrate.ts';
 
 /**
- * One store, two garments, some stock, and one owner who can sign in.
+ * A complete local Talla storefront with stable, source-attributed demo merchandise.
  *
- * A clean clone has an empty database, and an empty database renders an empty shop, which
- * makes it impossible to tell a broken read path from a store with nothing in it. This is
- * the difference between `docker compose up` giving you a working system and giving you a
- * blank page you have to debug.
- *
- * Development only. It refuses to touch a database whose name does not say so, because
- * the one thing worse than no seed data is seed data in a pilot store's catalogue.
- *
- *   TALLA_MIGRATION_DATABASE_URL=... TALLA_INDEX_KEY=... node scripts/seed-dev.ts
+ * Development only. It refuses to touch a database whose name does not identify a local
+ * environment. Product ids are derived from catalog keys, so rerunning this file updates
+ * rows and stock instead of making duplicates.
  */
+
+type Size = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
+
+interface DemoProduct {
+  readonly key: string;
+  readonly name: string;
+  readonly nameEn: string;
+  readonly slot: 'top' | 'bottom';
+  readonly blockId: string;
+  readonly price: number;
+  readonly colorHex: string;
+  readonly colorLabel: string;
+  readonly source: { readonly merchant: string; readonly productUrl: string };
+  readonly sizeChart?: unknown;
+  readonly image: string;
+  readonly imageWidth: number;
+  readonly imageHeight: number;
+  readonly sizes: readonly Size[];
+}
+
+interface DemoCatalog {
+  readonly products: readonly DemoProduct[];
+}
 
 const url = process.env['TALLA_MIGRATION_DATABASE_URL'];
 const indexKeyRaw = process.env['TALLA_INDEX_KEY'];
@@ -28,48 +45,58 @@ if (url === undefined || indexKeyRaw === undefined) {
   process.exit(1);
 }
 
-const name = new URL(url).pathname.replace('/', '');
-if (!/dev|local|test/.test(name)) {
+const databaseName = new URL(url).pathname.replace('/', '');
+if (!/dev|local|test/.test(databaseName)) {
   process.stderr.write(
-    `Refusing to seed "${name}": the database name must contain dev, local or test.\n`,
+    `Refusing to seed "${databaseName}": the database name must contain dev, local or test.\n`,
   );
   process.exit(1);
 }
 
+const catalog = JSON.parse(
+  readFileSync(new URL('./catalog/demo-catalog.json', import.meta.url), 'utf8'),
+) as DemoCatalog;
 const pool = new Pool({ connectionString: url });
 const tenantId = randomUUID();
 const ownerId = randomUUID();
-const tee = randomUUID();
-const jeans = randomUUID();
+
+/** A deterministic UUID-shaped identifier for one local catalog key. */
+function stableId(key: string): string {
+  const hex = createHash('sha256').update(`talla-demo:${key}`).digest('hex').slice(0, 32);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20)}`;
+}
+
+function spec(product: DemoProduct): string {
+  return JSON.stringify({
+    spec_version: '1.0.0',
+    block_id: product.blockId,
+    style: { slot: product.slot, dominant_colors: [product.colorHex] },
+  });
+}
+
+function publishedAssets(product: DemoProduct, sortOrder: number): string {
+  return JSON.stringify({
+    catalog_image: {
+      url: product.image,
+      width: product.imageWidth,
+      height: product.imageHeight,
+    },
+    color_hex: product.colorHex,
+    color_label: product.colorLabel,
+    source: {
+      merchant: product.source.merchant,
+      product_url: product.source.productUrl,
+    },
+    size_chart: product.sizeChart,
+    sort_order: sortOrder,
+    demo_catalog: true,
+  });
+}
 
 /** The same HMAC the application uses, so the seeded owner can actually sign in. */
 const phoneHash = createHmac('sha256', Buffer.from(indexKeyRaw, 'base64'))
   .update(ownerPhone)
   .digest('hex');
-
-/**
- * A spec shaped like the real contract, not like whatever the page happens to read.
- *
- * `block_id`, `style.slot` and `style.dominant_colors` are fields of the frozen
- * `GarmentSpec` (spec section 7), so the read path this exercises is the one Garment
- * Understanding will feed. `display` is the exception and is marked as such: reference
- * photographs are development material (ADR-0017) and the asset pipeline replaces them.
- */
-function spec(
-  blockId: string,
-  slot: 'top' | 'bottom',
-  colorHex: string,
-  image: string,
-  width: number,
-  height: number,
-): string {
-  return JSON.stringify({
-    spec_version: '1.0.0',
-    block_id: blockId,
-    style: { slot, dominant_colors: [colorHex] },
-    display: { image, image_width: width, image_height: height },
-  });
-}
 
 const client = await pool.connect();
 
@@ -77,7 +104,9 @@ try {
   await runMigrations(pool);
 
   await client.query(
-    "INSERT INTO tenants (id, subdomain, name_ar, name_en) VALUES ($1, 'nasij', 'النسيج', 'Nasij') ON CONFLICT (subdomain) DO NOTHING",
+    `INSERT INTO tenants (id, subdomain, name_ar, name_en)
+     VALUES ($1, 'nasij', 'طلّة', 'Talla')
+     ON CONFLICT (subdomain) DO UPDATE SET name_ar = EXCLUDED.name_ar, name_en = EXCLUDED.name_en`,
     [tenantId],
   );
   const { rows: tenants } = await client.query<{ id: string }>(
@@ -98,60 +127,60 @@ try {
     [owners[0]?.id ?? ownerId, store],
   );
 
-  /**
-   * Everything below this line is tenant scoped, and the seed obeys the same row-level
-   * security the application does.
-   *
-   * The migration role owns these tables, and they FORCE row-level security, so ownership
-   * buys nothing: without `app.current_tenant` the WITH CHECK matches no row and the
-   * insert is refused. That is the policy working. Seeding through a superuser instead
-   * would bypass it and leave the one obvious end-to-end exercise of tenant isolation
-   * proving nothing (spec 12.3).
-   */
   await client.query("SELECT set_config('app.current_tenant', $1, false)", [store]);
+  await client.query('BEGIN');
+  try {
+    // Keep old local orders readable while removing the superseded placeholders from the
+    // live catalog.
+    await client.query(
+      "UPDATE garments SET status = 'archived' WHERE published_assets IS NULL AND spec ? 'display'",
+    );
 
-  await client.query(
-    `INSERT INTO garments (tenant_id, id, name_ar, name_en, price, status, spec)
-     VALUES ($1, $2, $3, $4, $5, 'ready', $6), ($1, $7, $8, $9, $10, 'ready', $11)
-     ON CONFLICT DO NOTHING`,
-    [
-      store,
-      tee,
-      'تي شيرت قطن برقبة دائرية',
-      'Crew neck cotton tee',
-      65000,
-      spec(
-        'tee-crew-relaxed',
-        'top',
-        '#e9e4da',
-        '/references/tee-front.webp',
-        1795,
-        2048,
-      ),
-      jeans,
-      'جينز أزرق بقصة مستقيمة',
-      'Straight leg blue jean',
-      110000,
-      spec('jeans-straight', 'bottom', '#3f5a7d', '/references/jeans.webp', 435, 650),
-    ],
+    for (const [sortOrder, product] of catalog.products.entries()) {
+      const garmentId = stableId(product.key);
+      await client.query(
+        `INSERT INTO garments
+           (tenant_id, id, name_ar, name_en, price, status, spec, published_assets)
+         VALUES ($1, $2, $3, $4, $5, 'ready', $6, $7)
+         ON CONFLICT (tenant_id, id) DO UPDATE SET
+           name_ar = EXCLUDED.name_ar,
+           name_en = EXCLUDED.name_en,
+           price = EXCLUDED.price,
+           status = 'ready',
+           spec = EXCLUDED.spec,
+           published_assets = EXCLUDED.published_assets`,
+        [
+          store,
+          garmentId,
+          product.name,
+          product.nameEn,
+          product.price,
+          spec(product),
+          publishedAssets(product, sortOrder),
+        ],
+      );
+      await client.query(
+        'UPDATE stock SET quantity = 0 WHERE tenant_id = $1 AND garment_id = $2',
+        [store, garmentId],
+      );
+      for (const size of product.sizes) {
+        await client.query(
+          `INSERT INTO stock (tenant_id, garment_id, size, quantity)
+           VALUES ($1, $2, $3, 8)
+           ON CONFLICT (tenant_id, garment_id, size) DO UPDATE SET quantity = EXCLUDED.quantity`,
+          [store, garmentId, size],
+        );
+      }
+    }
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  }
+
+  process.stdout.write(
+    `Seeded store "nasij" (${store}) with ${String(catalog.products.length)} products.\n`,
   );
-
-  // The jean is short two sizes on purpose, so the sold-out path is visible without
-  // anybody having to place an order first.
-  for (const size of ['XS', 'S', 'M', 'L', 'XL', 'XXL']) {
-    await client.query(
-      'INSERT INTO stock (tenant_id, garment_id, size, quantity) VALUES ($1, $2, $3, 8) ON CONFLICT DO NOTHING',
-      [store, tee, size],
-    );
-  }
-  for (const size of ['S', 'M', 'L', 'XL']) {
-    await client.query(
-      'INSERT INTO stock (tenant_id, garment_id, size, quantity) VALUES ($1, $2, $3, 5) ON CONFLICT DO NOTHING',
-      [store, jeans, size],
-    );
-  }
-
-  process.stdout.write(`Seeded store "nasij" (${store}).\n`);
   process.stdout.write(`Owner sign in: ${ownerPhone}, code printed by the admin log.\n`);
 } finally {
   client.release();

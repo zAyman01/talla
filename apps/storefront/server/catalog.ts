@@ -1,7 +1,14 @@
 import type { Sql } from '@talla/database';
 import type { BodySize } from '@talla/shared';
+import { GARMENT_BLOCKS } from '@talla/blocks';
 import type { GarmentBlockId } from '@talla/blocks';
-import type { CatalogProduct } from '../product.ts';
+import type {
+  CatalogMeasurement,
+  CatalogProduct,
+  CatalogSizeChart,
+  CatalogSizeChartRow,
+  CatalogSource,
+} from '../product.ts';
 
 /**
  * The catalogue, read from PostgreSQL.
@@ -21,11 +28,12 @@ interface CatalogRow extends Record<string, unknown> {
   readonly name_ar: string;
   readonly price: number;
   readonly spec: unknown;
+  readonly published_assets?: unknown;
   readonly sizes: readonly string[] | null;
 }
 
 const SIZES: readonly BodySize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-const BLOCKS: readonly GarmentBlockId[] = ['tee-crew-relaxed', 'jeans-straight'];
+const BLOCKS = new Set<string>(GARMENT_BLOCKS.map((candidate) => candidate.id));
 
 const SLOT_LABEL: Readonly<Record<'top' | 'bottom', string>> = {
   top: 'قطعة علوية',
@@ -35,6 +43,94 @@ const SLOT_LABEL: Readonly<Record<'top' | 'bottom', string>> = {
 function field(source: unknown, name: string): unknown {
   if (typeof source !== 'object' || source === null) return undefined;
   return (source as Record<string, unknown>)[name];
+}
+
+function record(source: unknown): Readonly<Record<string, unknown>> | undefined {
+  return typeof source === 'object' && source !== null && !Array.isArray(source)
+    ? (source as Readonly<Record<string, unknown>>)
+    : undefined;
+}
+
+function catalogImage(
+  assets: unknown,
+  legacyDisplay: unknown,
+): { image: string; width: number; height: number } | undefined {
+  const published = field(assets, 'catalog_image');
+  const image = field(published, 'url') ?? field(legacyDisplay, 'image');
+  const width = field(published, 'width') ?? field(legacyDisplay, 'image_width');
+  const height = field(published, 'height') ?? field(legacyDisplay, 'image_height');
+  if (
+    typeof image !== 'string' ||
+    !image.startsWith('/') ||
+    image.startsWith('//') ||
+    typeof width !== 'number' ||
+    !Number.isSafeInteger(width) ||
+    width < 1 ||
+    typeof height !== 'number' ||
+    !Number.isSafeInteger(height) ||
+    height < 1
+  )
+    return undefined;
+  return { image, width, height };
+}
+
+function source(value: unknown): CatalogSource | undefined {
+  const item = record(value);
+  const merchant = item?.['merchant'];
+  const productUrl = item?.['product_url'];
+  if (
+    typeof merchant !== 'string' ||
+    typeof productUrl !== 'string' ||
+    !productUrl.startsWith('https://')
+  )
+    return undefined;
+  return { merchant, productUrl };
+}
+
+function measurement(value: unknown): CatalogMeasurement | undefined {
+  const item = record(value);
+  const key = item?.['key'];
+  const label = item?.['label'];
+  const measured = item?.['value'];
+  const unit = item?.['unit'];
+  if (
+    typeof key !== 'string' ||
+    typeof label !== 'string' ||
+    typeof measured !== 'string' ||
+    (unit !== undefined && typeof unit !== 'string')
+  )
+    return undefined;
+  return { key, label, value: measured, ...(unit === undefined ? {} : { unit }) };
+}
+
+function sizeChart(value: unknown): CatalogSizeChart | undefined {
+  const chart = record(value);
+  const rawRows = record(chart?.['rows']);
+  if (!rawRows) return undefined;
+  const rows: Partial<Record<BodySize, CatalogSizeChartRow>> = {};
+  for (const size of SIZES) {
+    const raw = record(rawRows[size]);
+    const sourceLabel = raw?.['sourceLabel'];
+    const rawMeasurements = raw?.['measurements'];
+    if (typeof sourceLabel !== 'string' || !Array.isArray(rawMeasurements)) continue;
+    const measurements = rawMeasurements.flatMap((candidate) => {
+      const parsed = measurement(candidate);
+      return parsed === undefined ? [] : [parsed];
+    });
+    if (measurements.length === 0) continue;
+    rows[size] = { sourceLabel, measurements };
+  }
+  if (Object.keys(rows).length === 0) return undefined;
+  const rawNotes = chart?.['notes'];
+  const notes = Array.isArray(rawNotes)
+    ? rawNotes.filter((note): note is string => typeof note === 'string')
+    : [];
+  const rawImage = chart?.['sourceImageUrl'];
+  const sourceImageUrl =
+    typeof rawImage === 'string' && rawImage.startsWith('https://')
+      ? rawImage
+      : undefined;
+  return { rows, notes, ...(sourceImageUrl ? { sourceImageUrl } : {}) };
 }
 
 export type { CatalogProduct };
@@ -49,25 +145,25 @@ export type { CatalogProduct };
 export function toProduct(row: CatalogRow): CatalogProduct | undefined {
   const style = field(row.spec, 'style');
   const display = field(row.spec, 'display');
+  const assets = row.published_assets;
   const blockId = field(row.spec, 'block_id');
   const slot = field(style, 'slot');
   const colors = field(style, 'dominant_colors');
   // `Array.isArray` narrows `unknown` to `any[]`, so the element needs its own type back
   // before it is read. The guard below is what actually admits it.
   const palette: readonly unknown[] = Array.isArray(colors) ? (colors as unknown[]) : [];
-  const colorHex = palette[0];
-  const image = field(display, 'image');
-  const width = field(display, 'image_width');
-  const height = field(display, 'image_height');
+  const colorHex = field(assets, 'color_hex') ?? palette[0];
+  const colorLabel = field(assets, 'color_label');
+  const picture = catalogImage(assets, display);
+  const itemSource = source(field(assets, 'source'));
+  const chart = sizeChart(field(assets, 'size_chart'));
 
   if (
     typeof blockId !== 'string' ||
-    !BLOCKS.includes(blockId as GarmentBlockId) ||
+    !BLOCKS.has(blockId) ||
     (slot !== 'top' && slot !== 'bottom') ||
     typeof colorHex !== 'string' ||
-    typeof image !== 'string' ||
-    typeof width !== 'number' ||
-    typeof height !== 'number'
+    picture === undefined
   ) {
     return undefined;
   }
@@ -78,11 +174,14 @@ export function toProduct(row: CatalogRow): CatalogProduct | undefined {
     name: row.name_ar,
     slot,
     categoryLabel: SLOT_LABEL[slot],
-    image,
-    imageWidth: width,
-    imageHeight: height,
+    image: picture.image,
+    imageWidth: picture.width,
+    imageHeight: picture.height,
     price: row.price,
     colorHex,
+    ...(typeof colorLabel === 'string' ? { colorLabel } : {}),
+    ...(chart === undefined ? {} : { sizeChart: chart }),
+    ...(itemSource === undefined ? {} : { source: itemSource }),
     sizes: SIZES.filter((size) => (row.sizes ?? []).includes(size)),
   };
 }
@@ -96,16 +195,17 @@ export function toProduct(row: CatalogRow): CatalogProduct | undefined {
  */
 export async function readCatalog(sql: Sql): Promise<readonly CatalogProduct[]> {
   const { rows } = await sql.query<CatalogRow>(
-    `SELECT g.id, g.name_ar, g.price, g.spec,
+    `SELECT g.id, g.name_ar, g.price, g.spec, g.published_assets,
             array_remove(array_agg(s.size ORDER BY s.size), NULL) AS sizes
      FROM garments g
      LEFT JOIN stock s ON s.garment_id = g.id AND s.quantity > 0
      WHERE g.status = 'ready'
-     GROUP BY g.id, g.name_ar, g.price, g.spec, g.created_at
+     GROUP BY g.id, g.name_ar, g.price, g.spec, g.published_assets, g.created_at
      -- The id is a tiebreak, not decoration. Two garments uploaded in one transaction
      -- share a created_at, and ordering on that alone lets the catalogue reshuffle
      -- between page loads for no reason a buyer could understand.
-     ORDER BY g.created_at, g.id`,
+     ORDER BY COALESCE((g.published_assets ->> 'sort_order')::integer, 2147483647),
+              g.created_at, g.id`,
   );
 
   const products: CatalogProduct[] = [];

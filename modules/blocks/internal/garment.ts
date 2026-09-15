@@ -22,7 +22,12 @@ import type { MeshData, Ring } from './geometry.ts';
 import { loft, mergeMeshes, ringAtHeight, ringPoints } from './geometry.ts';
 import { ARM_LANDMARK, LANDMARK, bodyStations, mirrored } from './body.ts';
 
-export type GarmentBlockId = 'tee-crew-relaxed' | 'jeans-straight';
+export type GarmentBlockId =
+  | 'tee-crew-relaxed'
+  | 'tee-long-relaxed'
+  | 'jeans-straight'
+  | 'pants-wide-leg'
+  | 'shorts-relaxed';
 
 /**
  * Where a garment sits in the stack. `over` is solved against a body inflated by the
@@ -87,12 +92,15 @@ export interface GarmentBlockDefinition {
 const JEANS_WAISTBAND_Y = 1.03;
 const JEANS_HEM_Y = 0.1;
 const JEANS_SEAT_BOTTOM_Y = 0.78;
+const WIDE_PANTS_HEM_Y = 0.055;
+const SHORTS_HEM_Y = 0.56;
 
 // Six centimetres below the natural waist reads as a crop top once a mid rise jean is
 // under it. A tee hem sits on the upper hip.
 const TEE_HEM_Y = 0.945;
 const TEE_NECK_Y = 1.418;
 const SLEEVE_HEM_Y = 1.175;
+const LONG_SLEEVE_HEM_Y = 0.81;
 
 export const GARMENT_BLOCKS: readonly GarmentBlockDefinition[] = [
   {
@@ -108,12 +116,50 @@ export const GARMENT_BLOCKS: readonly GarmentBlockDefinition[] = [
     ],
   },
   {
+    id: 'tee-long-relaxed',
+    version: '1.0.0',
+    slot: 'top',
+    category: 'long-sleeve-top',
+    fabricId: 'cotton-jersey',
+    hemY: TEE_HEM_Y,
+    fitPoints: [
+      { key: 'chest', y: LANDMARK.bust },
+      { key: 'hip', y: TEE_HEM_Y },
+    ],
+  },
+  {
     id: 'jeans-straight',
     version: '1.0.0',
     slot: 'bottom',
     category: 'jeans',
     fabricId: 'denim-rigid',
     hemY: JEANS_HEM_Y,
+    fitPoints: [
+      { key: 'waist', y: JEANS_WAISTBAND_Y },
+      { key: 'hip', y: LANDMARK.hip },
+      { key: 'thigh', y: LANDMARK.thigh },
+    ],
+  },
+  {
+    id: 'pants-wide-leg',
+    version: '1.0.0',
+    slot: 'bottom',
+    category: 'wide-leg-pants',
+    fabricId: 'cotton-jersey',
+    hemY: WIDE_PANTS_HEM_Y,
+    fitPoints: [
+      { key: 'waist', y: JEANS_WAISTBAND_Y },
+      { key: 'hip', y: LANDMARK.hip },
+      { key: 'thigh', y: LANDMARK.thigh },
+    ],
+  },
+  {
+    id: 'shorts-relaxed',
+    version: '1.0.0',
+    slot: 'bottom',
+    category: 'shorts',
+    fabricId: 'cotton-jersey',
+    hemY: SHORTS_HEM_Y,
     fitPoints: [
       { key: 'waist', y: JEANS_WAISTBAND_Y },
       { key: 'hip', y: LANDMARK.hip },
@@ -268,6 +314,13 @@ const SLEEVE_EASE: readonly EaseStop[] = [
   { y: ARM_LANDMARK.armTop, easeCm: 6 },
 ];
 
+const LONG_SLEEVE_EASE: readonly EaseStop[] = [
+  { y: LONG_SLEEVE_HEM_Y, easeCm: 5 },
+  { y: ARM_LANDMARK.forearm, easeCm: 7 },
+  { y: ARM_LANDMARK.elbow, easeCm: 8 },
+  { y: ARM_LANDMARK.armTop, easeCm: 7 },
+];
+
 const JEANS_EASE: readonly EaseStop[] = [
   { y: LANDMARK.ankle, easeCm: 14 },
   { y: LANDMARK.knee, easeCm: 9 },
@@ -275,6 +328,24 @@ const JEANS_EASE: readonly EaseStop[] = [
   { y: LANDMARK.crotch, easeCm: 6 },
   { y: LANDMARK.hip, easeCm: 4 },
   { y: JEANS_WAISTBAND_Y, easeCm: 2 },
+];
+
+const WIDE_LEG_EASE: readonly EaseStop[] = [
+  { y: WIDE_PANTS_HEM_Y, easeCm: 24 },
+  { y: LANDMARK.lowerCalf, easeCm: 22 },
+  { y: LANDMARK.knee, easeCm: 18 },
+  { y: LANDMARK.thigh, easeCm: 13 },
+  { y: LANDMARK.crotch, easeCm: 10 },
+  { y: LANDMARK.hip, easeCm: 7 },
+  { y: JEANS_WAISTBAND_Y, easeCm: 4 },
+];
+
+const SHORTS_EASE: readonly EaseStop[] = [
+  { y: SHORTS_HEM_Y, easeCm: 15 },
+  { y: LANDMARK.thigh, easeCm: 11 },
+  { y: LANDMARK.crotch, easeCm: 9 },
+  { y: LANDMARK.hip, easeCm: 7 },
+  { y: JEANS_WAISTBAND_Y, easeCm: 4 },
 ];
 
 const JEANS_HANG: HangRule = {
@@ -295,7 +366,7 @@ interface GarmentPanels {
   readonly trunkCapEnd: boolean;
 }
 
-function teePanels(size: BodySize, layer: LayerDepth): GarmentPanels {
+function teePanels(size: BodySize, layer: LayerDepth, longSleeve = false): GarmentPanels {
   const stations = bodyStations(size);
   const { torso, limb } = stations.segments;
   const body = panelRings(
@@ -321,9 +392,19 @@ function teePanels(size: BodySize, layer: LayerDepth): GarmentPanels {
   const neck = clothOver(neckBody, neckBody.girthCm * 1.2, torso, 'base');
   const sleeve = panelRings(
     {
-      heights: [SLEEVE_HEM_Y, 1.28, ARM_LANDMARK.armTop],
+      heights: longSleeve
+        ? [
+            LONG_SLEEVE_HEM_Y,
+            0.87,
+            ARM_LANDMARK.forearm,
+            ARM_LANDMARK.elbow,
+            1.16,
+            1.28,
+            ARM_LANDMARK.armTop,
+          ]
+        : [SLEEVE_HEM_Y, 1.28, ARM_LANDMARK.armTop],
       stations: stations.arm,
-      ease: SLEEVE_EASE,
+      ease: longSleeve ? LONG_SLEEVE_EASE : SLEEVE_EASE,
       segments: limb,
     },
     layer,
@@ -337,9 +418,17 @@ function teePanels(size: BodySize, layer: LayerDepth): GarmentPanels {
   };
 }
 
-function jeansPanels(size: BodySize, layer: LayerDepth): GarmentPanels {
+function bottomPanels(
+  size: BodySize,
+  layer: LayerDepth,
+  kind: 'straight' | 'wide' | 'shorts',
+): GarmentPanels {
   const stations = bodyStations(size);
   const { torso, limb } = stations.segments;
+  const hemY =
+    kind === 'wide' ? WIDE_PANTS_HEM_Y : kind === 'shorts' ? SHORTS_HEM_Y : JEANS_HEM_Y;
+  const ease =
+    kind === 'wide' ? WIDE_LEG_EASE : kind === 'shorts' ? SHORTS_EASE : JEANS_EASE;
   const seat = panelRings(
     {
       heights: [
@@ -350,25 +439,29 @@ function jeansPanels(size: BodySize, layer: LayerDepth): GarmentPanels {
         JEANS_WAISTBAND_Y,
       ],
       stations: stations.torso,
-      ease: JEANS_EASE,
+      ease,
       segments: torso,
       hang: JEANS_HANG,
     },
     layer,
   );
+  const legHeights =
+    kind === 'shorts'
+      ? [SHORTS_HEM_Y, LANDMARK.midThigh, LANDMARK.thigh, LANDMARK.hip]
+      : [
+          hemY,
+          LANDMARK.lowerCalf,
+          LANDMARK.calf,
+          LANDMARK.knee,
+          LANDMARK.midThigh,
+          LANDMARK.thigh,
+          LANDMARK.hip,
+        ];
   const leg = panelRings(
     {
-      heights: [
-        JEANS_HEM_Y,
-        LANDMARK.lowerCalf,
-        LANDMARK.calf,
-        LANDMARK.knee,
-        LANDMARK.midThigh,
-        LANDMARK.thigh,
-        LANDMARK.hip,
-      ],
+      heights: legHeights,
       stations: stations.leg,
-      ease: JEANS_EASE,
+      ease,
       segments: limb,
     },
     layer,
@@ -383,7 +476,18 @@ function jeansPanels(size: BodySize, layer: LayerDepth): GarmentPanels {
 }
 
 function panelsFor(id: GarmentBlockId, size: BodySize, layer: LayerDepth): GarmentPanels {
-  return id === 'tee-crew-relaxed' ? teePanels(size, layer) : jeansPanels(size, layer);
+  switch (id) {
+    case 'tee-crew-relaxed':
+      return teePanels(size, layer);
+    case 'tee-long-relaxed':
+      return teePanels(size, layer, true);
+    case 'jeans-straight':
+      return bottomPanels(size, layer, 'straight');
+    case 'pants-wide-leg':
+      return bottomPanels(size, layer, 'wide');
+    case 'shorts-relaxed':
+      return bottomPanels(size, layer, 'shorts');
+  }
 }
 
 /**
@@ -422,8 +526,9 @@ export function garmentGirthAt(
 ): number {
   const panels = panelsFor(id, size, layer);
   const trunkBottom = panels.trunk[0];
+  const definition = block(id);
   const onLimb =
-    id === 'jeans-straight' && trunkBottom !== undefined && y < trunkBottom.y;
+    definition?.slot === 'bottom' && trunkBottom !== undefined && y < trunkBottom.y;
   return ringAtHeight(onLimb ? panels.limb : panels.trunk, y).girthCm;
 }
 

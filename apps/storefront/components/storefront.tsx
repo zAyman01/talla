@@ -21,6 +21,7 @@ import { TIER_BUDGET, probeTier } from '@talla/viewer';
 import type { DeviceTier } from '@talla/shared';
 import type { DressedGarment } from '@talla/viewer';
 import type { CatalogProduct } from '../product.ts';
+import { initialOutfit, toggleOutfit } from '../outfit.ts';
 
 const Mannequin = dynamic(() => import('./mannequin.tsx').then((m) => m.Mannequin), {
   ssr: false,
@@ -34,6 +35,8 @@ const Mannequin = dynamic(() => import('./mannequin.tsx').then((m) => m.Mannequi
  */
 type Product = CatalogProduct;
 type ProductId = string;
+type CatalogSourceFilter = 'all' | 'Farid Store' | 'Clother Wear';
+type CatalogSlotFilter = 'all' | Product['slot'];
 
 const SIZES: readonly BodySize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -72,20 +75,26 @@ function centimetres(value: number): string {
   return `${new Intl.NumberFormat('en-US').format(value)} سم`;
 }
 
+function sourceMeasurement(value: string, unit: string | undefined): string {
+  return unit ? `${value} ${unit}` : value;
+}
+
 export function Storefront({
   products,
 }: {
   readonly products: readonly Product[];
 }): ReactNode {
-  // Everything the store sells is worn to begin with, so the first thing a buyer sees is
-  // a dressed figure rather than an empty one.
-  const [chosen, setChosen] = useState<ReadonlySet<ProductId>>(
-    () => new Set<ProductId>(products.map((product) => product.id)),
+  // One item per slot: color variants replace each other instead of occupying the same
+  // 3D surface and flickering through one another.
+  const [chosen, setChosen] = useState<ReadonlySet<ProductId>>(() =>
+    initialOutfit(products),
   );
-  const [size, setSize] = useState<BodySize>('M');
+  const [size, setSize] = useState<BodySize>('L');
   const [cart, setCart] = useState<readonly ProductId[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [viewerAvailable, setViewerAvailable] = useState(true);
+  const [sourceFilter, setSourceFilter] = useState<CatalogSourceFilter>('Farid Store');
+  const [slotFilter, setSlotFilter] = useState<CatalogSlotFilter>('all');
   /**
    * The device tier, decided before the renderer is fetched (spec 11.2).
    *
@@ -110,6 +119,15 @@ export function Storefront({
     () => products.filter((product) => cart.includes(product.id)),
     [cart],
   );
+  const visibleProducts = useMemo(
+    () =>
+      products.filter(
+        (product) =>
+          (sourceFilter === 'all' || product.source?.merchant === sourceFilter) &&
+          (slotFilter === 'all' || product.slot === slotFilter),
+      ),
+    [products, slotFilter, sourceFilter],
+  );
 
   /**
    * Layering resolves by slot, outermost last. A top worn with a bottom is the `over`
@@ -132,7 +150,15 @@ export function Storefront({
    * tee report a looser fit the moment a buyer adds jeans, and the tee has not changed.
    */
   const fits = useMemo(
-    () => outfit.map((product) => ({ product, fit: garmentFit(product.blockId, size) })),
+    () =>
+      outfit.map((product) => {
+        const chart = product.sizeChart?.rows[size];
+        return {
+          product,
+          chart,
+          fit: chart === undefined ? garmentFit(product.blockId, size) : undefined,
+        };
+      }),
     [outfit, size],
   );
 
@@ -162,12 +188,7 @@ export function Storefront({
   }, [cartOpen]);
 
   function toggle(id: ProductId): void {
-    setChosen((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    setChosen((current) => toggleOutfit(products, current, id));
   }
 
   function addOutfit(): void {
@@ -178,8 +199,8 @@ export function Storefront({
   return (
     <div className="store-shell">
       <header className="store-header">
-        <Link href="/" className="store-name" aria-label="متجر النسيج التجريبي">
-          النسيج
+        <Link href="/" className="store-name" aria-label="متجر طلّة التجريبي">
+          طلّة
         </Link>
         <span className="demo-badge">متجر تجريبي</span>
         <button
@@ -288,37 +309,69 @@ export function Storefront({
               <div className="fit-readout" aria-live="polite">
                 <h3>القياس على مقاس {size}</h3>
                 <ul>
-                  {fits.map(({ product, fit }) => (
+                  {fits.map(({ product, fit, chart }) => (
                     <li key={product.id}>
                       <p className="fit-headline">
                         <strong>{product.name}</strong>
-                        <span className={`fit-verdict ${fit.verdict}`}>
-                          {VERDICT_LABEL[fit.verdict]}
-                        </span>
+                        {fit ? (
+                          <span className={`fit-verdict ${fit.verdict}`}>
+                            {VERDICT_LABEL[fit.verdict]}
+                          </span>
+                        ) : (
+                          <span className="fit-verdict">
+                            مقاس المصدر {chart?.sourceLabel}
+                          </span>
+                        )}
                       </p>
                       <dl>
-                        {fit.readings.map((reading) => (
-                          <div key={reading.key}>
-                            <dt>{pointLabel(product.slot, reading.key)}</dt>
-                            <dd>
-                              <span className="numeric">
-                                {centimetres(reading.garmentCm)}
-                              </span>
-                              {showsEase(product.slot, reading.key) && (
-                                <span className="muted">
-                                  زيادة {centimetres(reading.easeCm)}
-                                </span>
-                              )}
-                            </dd>
-                          </div>
-                        ))}
+                        {chart
+                          ? chart.measurements.map((reading) => (
+                              <div key={reading.key}>
+                                <dt>{reading.label}</dt>
+                                <dd className="numeric">
+                                  {sourceMeasurement(reading.value, reading.unit)}
+                                </dd>
+                              </div>
+                            ))
+                          : fit?.readings.map((reading) => (
+                              <div key={reading.key}>
+                                <dt>{pointLabel(product.slot, reading.key)}</dt>
+                                <dd>
+                                  <span className="numeric">
+                                    {centimetres(reading.garmentCm)}
+                                  </span>
+                                  {showsEase(product.slot, reading.key) && (
+                                    <span className="muted">
+                                      زيادة {centimetres(reading.easeCm)}
+                                    </span>
+                                  )}
+                                </dd>
+                              </div>
+                            ))}
                       </dl>
+                      {product.source && (
+                        <a
+                          className="measurement-source"
+                          href={product.source.productUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          بيانات المقاس: {product.source.merchant}
+                        </a>
+                      )}
+                      {chart &&
+                        product.sizeChart &&
+                        product.sizeChart.notes.length > 0 && (
+                          <p className="muted chart-note">
+                            {product.sizeChart.notes.join(' ')}
+                          </p>
+                        )}
                     </li>
                   ))}
                 </ul>
                 <p className="muted fit-basis">
-                  القياسات محسوبة من نموذج القطعة على جسم المانيكان، وليست من قطعة مصورة
-                  في متجر.
+                  القياسات المنشورة تُعرض كما وردت من المتجر. القطع التي لا يتوفر لها جدول
+                  تستخدم قياس نموذجها ثلاثي الأبعاد.
                 </p>
               </div>
             )}
@@ -327,11 +380,56 @@ export function Storefront({
           <section className="catalog-panel" aria-labelledby="pieces-title">
             <div className="section-heading">
               <h2 id="pieces-title">القطع المتاحة</h2>
-              <span className="muted">{products.length} قطعة</span>
+              <span className="muted">
+                {visibleProducts.length} من {products.length} قطعة
+              </span>
+            </div>
+
+            <div className="catalog-filters">
+              <div role="group" aria-label="مصدر المنتجات">
+                {(
+                  [
+                    ['Farid Store', 'Farid'],
+                    ['Clother Wear', 'Clother'],
+                    ['all', 'الكل'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    type="button"
+                    key={value}
+                    aria-pressed={sourceFilter === value}
+                    onClick={() => {
+                      setSourceFilter(value);
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div role="group" aria-label="نوع القطعة">
+                {(
+                  [
+                    ['all', 'كل الأنواع'],
+                    ['top', 'علوي'],
+                    ['bottom', 'سفلي'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    type="button"
+                    key={value}
+                    aria-pressed={slotFilter === value}
+                    onClick={() => {
+                      setSlotFilter(value);
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="catalog-grid">
-              {products.map((product) => {
+              {visibleProducts.map((product) => {
                 const selected = chosen.has(product.id);
                 const stocked = product.sizes.includes(size);
                 return (
@@ -361,6 +459,12 @@ export function Storefront({
                       <span className="product-copy">
                         <span className="product-kind">{product.categoryLabel}</span>
                         <strong>{product.name}</strong>
+                        {product.colorLabel && (
+                          <span className="product-color">
+                            <i style={{ backgroundColor: product.colorHex }} />
+                            {product.colorLabel}
+                          </span>
+                        )}
                         <span className="price numeric">{money(product.price)}</span>
                       </span>
                     </button>

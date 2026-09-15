@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import type { BodySize } from '@talla/shared';
+import type { BodySize, DeviceTier } from '@talla/shared';
 import type { GarmentBlockId, LayerDepth, MeshData } from '@talla/blocks';
 import { FIGURE_BOUNDS, bodyMesh, garmentMesh, settleStart } from '@talla/blocks';
 
@@ -58,6 +58,8 @@ export interface SceneOptions {
   readonly size: BodySize;
   readonly garments: readonly DressedGarment[];
   readonly style: SceneStyle;
+  /** Device budget already measured by the caller. Only tier A renders live shadows. */
+  readonly tier: DeviceTier;
   /**
    * A lost context in the Instagram WebView is expected, not exceptional. The caller
    * falls back to photographs; the scene only reports it (spec 11.2).
@@ -69,9 +71,12 @@ export interface MannequinScene {
   /** Re-dress the figure. Interruptible: a call mid-settle continues from the pose on screen. */
   dress(garments: readonly DressedGarment[], size: BodySize): void;
   rotate(radians: number): void;
+  setView(view: MannequinView): void;
   recenter(): void;
   dispose(): void;
 }
+
+export type MannequinView = 'front' | 'side' | 'back';
 
 /** The settle starts here and blends to rest: lifted, and opened out (spec 14.2). */
 const SETTLE_LIFT_M = 0.05;
@@ -81,7 +86,7 @@ const SETTLE_EXPAND = 1.06;
 const FIELD_OF_VIEW = 32;
 
 /** How much of the stage's height the figure fills at rest. */
-const FIGURE_FILL = 0.84;
+const FIGURE_FILL = 0.9;
 
 interface Blend {
   readonly from: Float32Array;
@@ -131,6 +136,8 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
+  renderer.shadowMap.enabled = options.tier === 'A';
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.setAttribute('role', 'img');
   host.appendChild(renderer.domElement);
 
@@ -145,13 +152,30 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
   const target = new THREE.Vector3(0, centerY, 0);
   camera.position.set(0, centerY + 0.06, distance);
 
-  scene.add(new THREE.HemisphereLight(style.lightColor, style.groundColor, 2.1));
-  const key = new THREE.DirectionalLight(style.lightColor, 1.9);
-  key.position.set(2.2, 3.4, 3.6);
+  // A neutral studio rig gives the near-black shell enough highlights to describe the
+  // waist, face and back from every angle without tinting the garment colours.
+  scene.add(new THREE.HemisphereLight(style.lightColor, style.groundColor, 1.35));
+  const key = new THREE.DirectionalLight(style.lightColor, 3.1);
+  key.position.set(2.4, 3.2, 3.8);
+  key.castShadow = options.tier === 'A';
+  key.shadow.mapSize.set(1024, 1024);
+  key.shadow.camera.near = 0.1;
+  key.shadow.camera.far = 8;
+  key.shadow.camera.left = -1.1;
+  key.shadow.camera.right = 1.1;
+  key.shadow.camera.top = 2.1;
+  key.shadow.camera.bottom = -0.2;
+  key.shadow.bias = -0.0004;
   scene.add(key);
-  const fill = new THREE.DirectionalLight(style.lightColor, 0.7);
-  fill.position.set(-2.6, 1.4, -2.2);
+  const fill = new THREE.DirectionalLight(style.lightColor, 1.25);
+  fill.position.set(-2.6, 1.7, 2.1);
   scene.add(fill);
+  const rim = new THREE.DirectionalLight(style.lightColor, 2.45);
+  rim.position.set(-1.8, 2.5, -3.6);
+  scene.add(rim);
+  const face = new THREE.PointLight(style.lightColor, 0.55, 5, 1.4);
+  face.position.set(0, 1.75, 2.2);
+  scene.add(face);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.copy(target);
@@ -168,19 +192,39 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
   const figure = new THREE.Group();
   scene.add(figure);
 
+  const groundGeometry = new THREE.CircleGeometry(0.34, 64);
+  const groundMaterial =
+    options.tier === 'A'
+      ? new THREE.ShadowMaterial({ color: 0x08090a, opacity: 0.24 })
+      : new THREE.MeshBasicMaterial({
+          color: 0x08090a,
+          opacity: 0.11,
+          transparent: true,
+          depthWrite: false,
+        });
+  const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = FIGURE_BOUNDS.bottom - 0.004;
+  ground.receiveShadow = options.tier === 'A';
+  scene.add(ground);
+
   const bodyGeometry = toGeometry(bodyMesh(options.size));
   const body: Piece = {
     geometry: bodyGeometry,
     mesh: new THREE.Mesh(
       bodyGeometry,
-      new THREE.MeshStandardMaterial({
+      new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(style.mannequinColor),
-        roughness: 0.92,
+        roughness: 0.42,
         metalness: 0,
+        clearcoat: 0.34,
+        clearcoatRoughness: 0.28,
       }),
     ),
     blend: undefined,
   };
+  body.mesh.castShadow = options.tier === 'A';
+  body.mesh.receiveShadow = options.tier === 'A';
   figure.add(body.mesh);
 
   const worn = new Map<GarmentBlockId, Piece>();
@@ -281,6 +325,8 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
           side: THREE.DoubleSide,
         }),
       );
+      mesh.castShadow = options.tier === 'A';
+      mesh.receiveShadow = options.tier === 'A';
       mesh.renderOrder = garment.layer === 'over' ? 2 : 1;
       figure.add(mesh);
       const piece: Piece = { mesh, geometry, blend: undefined };
@@ -330,6 +376,10 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
       figure.rotation.y += radians;
       draw();
     },
+    setView(view: MannequinView): void {
+      figure.rotation.y = view === 'front' ? 0 : view === 'side' ? Math.PI / 2 : Math.PI;
+      draw();
+    },
     recenter(): void {
       controls.reset();
       controls.target.copy(target);
@@ -351,6 +401,8 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
       worn.clear();
       body.geometry.dispose();
       (body.mesh.material as THREE.Material).dispose();
+      groundGeometry.dispose();
+      groundMaterial.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       renderer.domElement.remove();

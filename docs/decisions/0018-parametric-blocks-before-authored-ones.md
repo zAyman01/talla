@@ -24,9 +24,10 @@ geometry computed from a size chart.
 generated in TypeScript from a graded size chart, behind the same module interface the
 authored library will use.
 
-The figure is a headless standing form. Garments are the body plus an ease profile plus a
-hang rule, and every finished girth is a known number, which is what the fit reading beside
-the viewer is computed from. Cloth clearance is enforced per vertex rather than per girth.
+The figure is a faceless, full-height female retail form with a stable topology across six
+sizes. Garments are the body plus an ease profile plus a hang rule, and every finished
+girth is a known number, which is what the fit reading beside the viewer is computed from.
+Cloth clearance is enforced per vertex rather than per girth.
 
 The `BlockLibrary` interface for asset-backed authored blocks stays in place, unchanged and
 unimplemented. This record is superseded when authored blocks land.
