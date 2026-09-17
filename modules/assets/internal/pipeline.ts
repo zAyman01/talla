@@ -1,10 +1,6 @@
 import type { SolvedGarment } from '@talla/solver';
 import type { GarmentId, Result, Sha256, TenantId } from '@talla/shared';
-import type {
-  AssetPipeline,
-  PublishedGarment,
-  PublishFailure,
-} from '../contract.ts';
+import type { AssetPipeline, PublishedGarment, PublishFailure } from '../contract.ts';
 import type { AssetStore, PackedFile, PublishBundle } from './publish.ts';
 import { publishBundle } from './publish.ts';
 import { createR2Store } from './r2-store.ts';
@@ -19,7 +15,10 @@ export interface PipelineOptions {
 /**
  * Creates dummy GLB/KTX2/WebP content bytes for packaging when raw buffers are not supplied.
  */
-function createMockAssetBytes(role: PackedFile['role']): { bytes: Uint8Array; extension: PackedFile['extension'] } {
+function createMockAssetBytes(role: PackedFile['role']): {
+  bytes: Uint8Array;
+  extension: PackedFile['extension'];
+} {
   if (role === 'lod0') {
     return { bytes: new Uint8Array(25_000).fill(1), extension: 'glb' };
   }
@@ -85,7 +84,8 @@ export class ProductionAssetPipeline implements AssetPipeline {
 
       const turntableAsset = published.assets.find((a) => a.role === 'turntable');
       const turntableSha256: Sha256 = turntableAsset
-        ? turntableAsset.key.split('/').pop()?.replace('.webp', '') ?? 'mock-turntable-sha'
+        ? (turntableAsset.key.split('/').pop()?.replace('.webp', '') ??
+          'mock-turntable-sha')
         : 'mock-turntable-sha';
 
       const meshes = [0, 1, 2].map((lod) => {
@@ -101,13 +101,23 @@ export class ProductionAssetPipeline implements AssetPipeline {
       const textures = [
         {
           tier: 'A' as const,
-          sha256: published.assets.find((a) => a.role === 'textureA')?.key.split('/').pop()?.replace('.ktx2', '') ?? 'mock-tx-a',
+          sha256:
+            published.assets
+              .find((a) => a.role === 'textureA')
+              ?.key.split('/')
+              .pop()
+              ?.replace('.ktx2', '') ?? 'mock-tx-a',
           bytes: published.assets.find((a) => a.role === 'textureA')?.bytes ?? 0,
           contentType: 'image/ktx2' as const,
         },
         {
           tier: 'B' as const,
-          sha256: published.assets.find((a) => a.role === 'textureB')?.key.split('/').pop()?.replace('.ktx2', '') ?? 'mock-tx-b',
+          sha256:
+            published.assets
+              .find((a) => a.role === 'textureB')
+              ?.key.split('/')
+              .pop()
+              ?.replace('.ktx2', '') ?? 'mock-tx-b',
           bytes: published.assets.find((a) => a.role === 'textureB')?.bytes ?? 0,
           contentType: 'image/ktx2' as const,
         },

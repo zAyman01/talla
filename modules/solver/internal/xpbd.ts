@@ -8,10 +8,7 @@ import type { SolvedGarment, SolveFailure, SolveInput, Solver } from '../contrac
  */
 async function hashBytes(bytes: Uint8Array): Promise<Sha256> {
   if (typeof globalThis.crypto.subtle !== 'undefined') {
-    const hashBuffer = await globalThis.crypto.subtle.digest(
-      'SHA-256',
-      bytes,
-    );
+    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', bytes);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
   }
@@ -65,7 +62,10 @@ function simulateCloth(
   fabric: FabricPreset,
   bodySize: BodySize,
   substeps = 15,
-): { readonly restPositions: Float32Array; readonly settleFrames: readonly Float32Array[] } {
+): {
+  readonly restPositions: Float32Array;
+  readonly settleFrames: readonly Float32Array[];
+} {
   const numVertices = positions.length / 3;
   const current = Float32Array.from(positions);
   const prev = Float32Array.from(positions);
@@ -132,7 +132,7 @@ function simulateCloth(
         const dy = Math.abs(ring.y - vy);
         if (dy < nearestDist) {
           nearestDist = dy;
-          bodyRadius = (ring.girthCm / (2 * Math.PI * 100)) + minClearanceM;
+          bodyRadius = ring.girthCm / (2 * Math.PI * 100) + minClearanceM;
         }
       }
 

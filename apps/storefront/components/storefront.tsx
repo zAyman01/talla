@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  BagIcon,
-  CheckCircleIcon,
-  CoatHangerIcon,
-} from '@phosphor-icons/react';
+import { BagIcon, CheckCircleIcon, CoatHangerIcon } from '@phosphor-icons/react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -393,11 +389,7 @@ export function Storefront({
               </div>
             )}
 
-            <Suggestions
-              currentOutfit={outfit}
-              allProducts={products}
-              onTryOn={toggle}
-            />
+            <Suggestions currentOutfit={outfit} allProducts={products} onTryOn={toggle} />
           </section>
 
           <section className="catalog-panel" aria-labelledby="pieces-title">
@@ -415,6 +407,7 @@ export function Storefront({
               <input
                 id="catalog-search"
                 type="search"
+                aria-label="ابحثي في القطع"
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);

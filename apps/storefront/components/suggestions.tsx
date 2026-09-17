@@ -29,18 +29,26 @@ function deriveSuggestions(
   const activeSlots = new Set(currentOutfit.map((p) => p.slot));
 
   // If top is selected, prioritize bottoms; if bottom is selected, prioritize tops.
-  const preferredSlot = activeSlots.has('top') && !activeSlots.has('bottom')
-    ? 'bottom'
-    : activeSlots.has('bottom') && !activeSlots.has('top')
-      ? 'top'
-      : undefined;
+  const preferredSlot =
+    activeSlots.has('top') && !activeSlots.has('bottom')
+      ? 'bottom'
+      : activeSlots.has('bottom') && !activeSlots.has('top')
+        ? 'top'
+        : undefined;
 
   const candidates = allProducts.filter((p) => !activeIds.has(p.id));
   const scored: StylistSuggestion[] = candidates.map((product) => {
     let reason = 'قطعة تكمل الطلة وتتناسق معها';
     if (preferredSlot && product.slot === preferredSlot) {
-      reason = product.slot === 'bottom' ? 'بنطال يكمل إطلالة القطعة العلوية' : 'قطعة علوية تناسب هذا البنطال';
-    } else if (product.colorHex.toLowerCase() === '#ffffff' || product.colorHex.toLowerCase() === '#fafaf9' || product.colorHex.toLowerCase() === '#17181a') {
+      reason =
+        product.slot === 'bottom'
+          ? 'بنطال يكمل إطلالة القطعة العلوية'
+          : 'قطعة علوية تناسب هذا البنطال';
+    } else if (
+      product.colorHex.toLowerCase() === '#ffffff' ||
+      product.colorHex.toLowerCase() === '#fafaf9' ||
+      product.colorHex.toLowerCase() === '#17181a'
+    ) {
       reason = 'لون محايد أساسي يتناسق مع كل الألوان';
     } else {
       reason = 'تنسيق متوازن وأنيق مع اختيارك';

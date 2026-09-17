@@ -119,7 +119,9 @@ function toGeometry(data: MeshData): THREE.BufferGeometry {
  * Procedural micro-surface normal textures for fabric realism under studio directional lights.
  * Generates knit jersey loops or diagonal denim twill weave.
  */
-function createFabricNormalTexture(kind: 'jersey' | 'twill'): THREE.CanvasTexture | undefined {
+function createFabricNormalTexture(
+  kind: 'jersey' | 'twill',
+): THREE.CanvasTexture | undefined {
   if (typeof document === 'undefined') return undefined;
   const size = 128;
   const canvas = document.createElement('canvas');

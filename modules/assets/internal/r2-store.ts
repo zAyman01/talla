@@ -26,7 +26,10 @@ async function computeSha256(bytes: Uint8Array): Promise<string> {
  * Employs local in-memory/map storage when credentials are not configured (e.g., test/dev environments).
  */
 export class R2AssetStore implements AssetStore {
-  private readonly memoryStore = new Map<string, { readonly bytes: Uint8Array; readonly contentType: string }>();
+  private readonly memoryStore = new Map<
+    string,
+    { readonly bytes: Uint8Array; readonly contentType: string }
+  >();
 
   constructor(private readonly config: R2StoreConfig = {}) {}
 
@@ -36,7 +39,12 @@ export class R2AssetStore implements AssetStore {
 
   async putImmutable(key: string, bytes: Uint8Array, contentType: string): Promise<void> {
     // If endpoint and credentials are provided, upload to R2 via S3 API
-    if (this.config.endpoint && this.config.accessKeyId && this.config.secretAccessKey && this.config.bucket) {
+    if (
+      this.config.endpoint &&
+      this.config.accessKeyId &&
+      this.config.secretAccessKey &&
+      this.config.bucket
+    ) {
       const url = `${this.config.endpoint.replace(/\/$/, '')}/${this.config.bucket}/${key}`;
       try {
         const response = await fetch(url, {
@@ -67,7 +75,9 @@ export class R2AssetStore implements AssetStore {
     this.memoryStore.set(key, { bytes: Uint8Array.from(bytes), contentType });
   }
 
-  get(key: string): { readonly bytes: Uint8Array; readonly contentType: string } | undefined {
+  get(
+    key: string,
+  ): { readonly bytes: Uint8Array; readonly contentType: string } | undefined {
     return this.memoryStore.get(key);
   }
 }

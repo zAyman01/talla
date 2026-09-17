@@ -252,9 +252,15 @@ export function CheckoutModal({
                       <div>
                         <strong>{item.name}</strong>
                         <span>المقاس {item.size}</span>
-                        <span className="price numeric">{money(item.price * item.quantity)}</span>
+                        <span className="price numeric">
+                          {money(item.price * item.quantity)}
+                        </span>
                       </div>
-                      <div className="quantity" role="group" aria-label={`كمية ${item.name}`}>
+                      <div
+                        className="quantity"
+                        role="group"
+                        aria-label={`كمية ${item.name}`}
+                      >
                         <button
                           type="button"
                           aria-label={`تقليل كمية ${item.name}`}
@@ -317,6 +323,7 @@ export function CheckoutModal({
               <input
                 id="checkout-name"
                 type="text"
+                aria-label="الاسم بالكامل"
                 required
                 value={buyerName}
                 onChange={(e) => {
@@ -331,6 +338,7 @@ export function CheckoutModal({
               <input
                 id="checkout-phone"
                 type="tel"
+                aria-label="رقم الهاتف"
                 dir="ltr"
                 required
                 value={buyerPhone}
@@ -346,6 +354,7 @@ export function CheckoutModal({
               <input
                 id="checkout-city"
                 type="text"
+                aria-label="المحافظة أو المدينة"
                 required
                 value={buyerCity}
                 onChange={(e) => {
@@ -359,6 +368,7 @@ export function CheckoutModal({
               العنوان بالتفصيل
               <textarea
                 id="checkout-address"
+                aria-label="العنوان بالتفصيل"
                 rows={3}
                 required
                 value={buyerAddress}
@@ -373,6 +383,7 @@ export function CheckoutModal({
               <input
                 id="checkout-privacy"
                 type="checkbox"
+                aria-label="الموافقة على سياسة الخصوصية"
                 checked={privacyAccepted}
                 onChange={(e) => {
                   setPrivacyAccepted(e.target.checked);
@@ -404,11 +415,7 @@ export function CheckoutModal({
               >
                 العودة للسلة
               </button>
-              <button
-                type="submit"
-                className="primary"
-                disabled={isSubmitting}
-              >
+              <button type="submit" className="primary" disabled={isSubmitting}>
                 {isSubmitting ? 'جارٍ الإرسال…' : 'إرسال رمز التأكيد'}
               </button>
             </div>
@@ -431,6 +438,7 @@ export function CheckoutModal({
               <input
                 id="checkout-otp"
                 type="text"
+                aria-label="رمز التحقق"
                 dir="ltr"
                 maxLength={6}
                 required
@@ -480,9 +488,7 @@ export function CheckoutModal({
           <div className="checkout-success" aria-live="polite">
             <CheckCircleIcon size={48} weight="fill" />
             <h3>تم تسجيل طلبك بنجاح!</h3>
-            <p className="muted">
-              رقم الطلب المرجعي الخاص بك هو:
-            </p>
+            <p className="muted">رقم الطلب المرجعي الخاص بك هو:</p>
             <code>{orderReference}</code>
             <p className="checkout-note">
               سيتواصل معك مندوب المتجر لتأكيد موعد التوصيل والدفع عند الاستلام.

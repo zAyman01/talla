@@ -70,7 +70,7 @@ const FABRICS: readonly FabricPreset[] = [
   { id: 'cotton-jersey', bendStiffness: 0.12, stretchStiffness: 0.35, density: 0.18 },
   { id: 'denim-rigid', bendStiffness: 0.62, stretchStiffness: 0.88, density: 0.42 },
   { id: 'linen', bendStiffness: 0.35, stretchStiffness: 0.15, density: 0.22 },
-  { id: 'silk-viscose', bendStiffness: 0.08, stretchStiffness: 0.10, density: 0.14 },
+  { id: 'silk-viscose', bendStiffness: 0.08, stretchStiffness: 0.1, density: 0.14 },
 ];
 
 export function fabric(id: string): FabricPreset | undefined {
