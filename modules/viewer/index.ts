@@ -29,6 +29,8 @@ export type {
   SceneOptions,
   SceneStyle,
 } from './internal/scene.ts';
+export { createTurntable } from './internal/turntable.ts';
+export type { TurntableOptions, TurntableInstance } from './internal/turntable.ts';
 
 /**
  * Build the mannequin scene, loading the renderer on the way.

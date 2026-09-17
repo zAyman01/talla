@@ -18,6 +18,7 @@ export default defineConfig([
     '**/postcss.config.mjs',
     '**/src/generated/**',
     'test/fixtures/**',
+    '.railway/**',
   ]),
   js.configs.recommended,
   tseslint.configs.strictTypeChecked,

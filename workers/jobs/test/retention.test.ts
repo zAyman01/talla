@@ -45,7 +45,7 @@ const logger = createLogger({ sink: (line) => lines.push(line), policy: 'throw' 
 const BUYER_PHONE = '+201000000031';
 const BUYER_ADDRESS = '9 شارع قصر النيل، وسط البلد، القاهرة';
 const RETENTION_DAYS = 90;
-const now = new Date('2026-09-12T10:00:00.000Z');
+const now = new Date();
 
 /** An order that settled `daysAgo` days before the sweep runs. */
 async function order(tenantId: string, daysAgo: number): Promise<string> {
@@ -151,7 +151,7 @@ it('erases past the window, leaves the window alone, and records every tenant', 
         "SELECT action, entity_id, details FROM audit_log WHERE action = 'retention.swept'",
       );
       expect(rows).toHaveLength(1);
-      expect(rows[0]?.entity_id).toBe('2026-09-12');
+      expect(rows[0]?.entity_id).toBe(now.toISOString().slice(0, 10));
       expect(rows[0]?.details).toEqual({
         erased: erasedCount,
         windowDays: RETENTION_DAYS,

@@ -27,7 +27,6 @@ const NOT_YET_REACHABLE: Readonly<Record<string, string>> = {
   INGEST_NO_MATCHING_BLOCK: 'Stage E: block selection',
   UNDERSTAND_LOW_CONFIDENCE: 'Stage E: understanding confidence thresholds',
   UNDERSTAND_SEGMENTATION_FAILED: 'Stage E: segmentation',
-  SOLVE_NON_CONVERGENT: 'Stage E: the Dress Solver',
   SOLVE_SELF_INTERSECTION: 'Stage E: the Dress Solver',
   STOCK_UNAVAILABLE:
     'Task 8: the catalogue route distinguishes a sold-out garment from an insufficient quantity',

@@ -38,7 +38,7 @@ export interface CatalogProduct {
   readonly id: string;
   readonly blockId: GarmentBlockId;
   readonly name: string;
-  readonly slot: Extract<Slot, 'top' | 'bottom'>;
+  readonly slot: Extract<Slot, 'top' | 'bottom' | 'outer'>;
   readonly categoryLabel: string;
   readonly image: string;
   readonly imageWidth: number;

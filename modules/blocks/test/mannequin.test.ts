@@ -209,6 +209,10 @@ describe('fit reading', () => {
   it('reads a relaxed tee as relaxed and a straight jean as fitted', () => {
     expect(garmentFit('tee-crew-relaxed', 'M').verdict).toBe('relaxed');
     expect(garmentFit('jeans-straight', 'M').verdict).toBe('fitted');
+    expect(garmentFit('dress-midi', 'M').verdict).toBe('relaxed');
+    expect(garmentFit('abaya-open', 'M').verdict).toBe('loose');
+    expect(garmentFit('skirt-a-line', 'M').verdict).toBe('fitted');
+    expect(garmentFit('kaftan-relaxed', 'M').verdict).toBe('loose');
   });
 
   it('puts the thresholds where a pattern room puts them', () => {

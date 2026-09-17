@@ -116,6 +116,56 @@ function toGeometry(data: MeshData): THREE.BufferGeometry {
 }
 
 /**
+ * Procedural micro-surface normal textures for fabric realism under studio directional lights.
+ * Generates knit jersey loops or diagonal denim twill weave.
+ */
+function createFabricNormalTexture(kind: 'jersey' | 'twill'): THREE.CanvasTexture | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return undefined;
+
+  const imgData = ctx.createImageData(size, size);
+  const data = imgData.data;
+
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      let nx = 0;
+      let ny = 0;
+      if (kind === 'twill') {
+        const diag = Math.sin(((x + y) / 4) * Math.PI);
+        const cross = Math.sin(((x - y) / 4) * Math.PI) * 0.3;
+        nx = diag * 0.4;
+        ny = cross * 0.4;
+      } else {
+        const loopX = Math.sin((x / 2) * Math.PI);
+        const loopY = Math.cos((y / 3) * Math.PI);
+        nx = loopX * 0.25;
+        ny = loopY * 0.35;
+      }
+
+      const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
+      const idx = (y * size + x) * 4;
+      data[idx] = Math.round((nx * 0.5 + 0.5) * 255);
+      data[idx + 1] = Math.round((ny * 0.5 + 0.5) * 255);
+      data[idx + 2] = Math.round((nz * 0.5 + 0.5) * 255);
+      data[idx + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(16, 16);
+  texture.needsUpdate = true;
+  return texture;
+}
+
+/**
  * Build the scene and draw its first frame.
  *
  * Throws if the device will not give up a WebGL context. Callers settle the tier before
@@ -135,11 +185,15 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = options.tier === 'A';
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.setAttribute('role', 'img');
   host.appendChild(renderer.domElement);
+
+  const jerseyNormal = createFabricNormalTexture('jersey');
+  const twillNormal = createFabricNormalTexture('twill');
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(FIELD_OF_VIEW, 1, 0.05, 50);
@@ -215,10 +269,13 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
       bodyGeometry,
       new THREE.MeshPhysicalMaterial({
         color: new THREE.Color(style.mannequinColor),
-        roughness: 0.42,
-        metalness: 0,
-        clearcoat: 0.34,
-        clearcoatRoughness: 0.28,
+        roughness: 0.38,
+        metalness: 0.02,
+        clearcoat: 0.45,
+        clearcoatRoughness: 0.22,
+        sheen: 0.12,
+        sheenColor: new THREE.Color(0xffffff),
+        sheenRoughness: 0.4,
       }),
     ),
     blend: undefined,
@@ -316,12 +373,15 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
       }
       const start = settleStart(rest, { liftM: SETTLE_LIFT_M, expand: SETTLE_EXPAND });
       const geometry = toGeometry(start);
+      const isDenim = garment.blockId.includes('jean');
+      const normalMap = isDenim ? twillNormal : jerseyNormal;
       const mesh = new THREE.Mesh(
         geometry,
         new THREE.MeshStandardMaterial({
           color: new THREE.Color(garment.colorHex),
-          roughness: 0.78,
+          roughness: isDenim ? 0.84 : 0.72,
           metalness: 0,
+          ...(normalMap ? { normalMap, normalScale: new THREE.Vector2(0.35, 0.35) } : {}),
           side: THREE.DoubleSide,
         }),
       );
@@ -399,6 +459,8 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
         (piece.mesh.material as THREE.Material).dispose();
       }
       worn.clear();
+      jerseyNormal?.dispose();
+      twillNormal?.dispose();
       body.geometry.dispose();
       (body.mesh.material as THREE.Material).dispose();
       groundGeometry.dispose();

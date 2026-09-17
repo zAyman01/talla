@@ -27,7 +27,11 @@ export type GarmentBlockId =
   | 'tee-long-relaxed'
   | 'jeans-straight'
   | 'pants-wide-leg'
-  | 'shorts-relaxed';
+  | 'shorts-relaxed'
+  | 'dress-midi'
+  | 'abaya-open'
+  | 'skirt-a-line'
+  | 'kaftan-relaxed';
 
 /**
  * Where a garment sits in the stack. `over` is solved against a body inflated by the
@@ -65,6 +69,8 @@ export interface FabricPreset {
 const FABRICS: readonly FabricPreset[] = [
   { id: 'cotton-jersey', bendStiffness: 0.12, stretchStiffness: 0.35, density: 0.18 },
   { id: 'denim-rigid', bendStiffness: 0.62, stretchStiffness: 0.88, density: 0.42 },
+  { id: 'linen', bendStiffness: 0.35, stretchStiffness: 0.15, density: 0.22 },
+  { id: 'silk-viscose', bendStiffness: 0.08, stretchStiffness: 0.10, density: 0.14 },
 ];
 
 export function fabric(id: string): FabricPreset | undefined {
@@ -94,6 +100,10 @@ const JEANS_HEM_Y = 0.1;
 const JEANS_SEAT_BOTTOM_Y = 0.78;
 const WIDE_PANTS_HEM_Y = 0.055;
 const SHORTS_HEM_Y = 0.56;
+const DRESS_MIDI_HEM_Y = 0.45;
+const ABAYA_HEM_Y = 0.12;
+const SKIRT_HEM_Y = 0.52;
+const KAFTAN_HEM_Y = 0.2;
 
 // Six centimetres below the natural waist reads as a crop top once a mid rise jean is
 // under it. A tee hem sits on the upper hip.
@@ -164,6 +174,57 @@ export const GARMENT_BLOCKS: readonly GarmentBlockDefinition[] = [
       { key: 'waist', y: JEANS_WAISTBAND_Y },
       { key: 'hip', y: LANDMARK.hip },
       { key: 'thigh', y: LANDMARK.thigh },
+    ],
+  },
+  {
+    id: 'dress-midi',
+    version: '1.0.0',
+    slot: 'top',
+    category: 'dress',
+    fabricId: 'linen',
+    hemY: DRESS_MIDI_HEM_Y,
+    fitPoints: [
+      { key: 'chest', y: LANDMARK.bust },
+      { key: 'waist', y: LANDMARK.waist },
+      { key: 'hip', y: LANDMARK.hip },
+    ],
+  },
+  {
+    id: 'abaya-open',
+    version: '1.0.0',
+    slot: 'outer',
+    category: 'abaya',
+    fabricId: 'silk-viscose',
+    hemY: ABAYA_HEM_Y,
+    fitPoints: [
+      { key: 'chest', y: LANDMARK.bust },
+      { key: 'waist', y: LANDMARK.waist },
+      { key: 'hip', y: LANDMARK.hip },
+    ],
+  },
+  {
+    id: 'skirt-a-line',
+    version: '1.0.0',
+    slot: 'bottom',
+    category: 'skirt',
+    fabricId: 'linen',
+    hemY: SKIRT_HEM_Y,
+    fitPoints: [
+      { key: 'waist', y: JEANS_WAISTBAND_Y },
+      { key: 'hip', y: LANDMARK.hip },
+    ],
+  },
+  {
+    id: 'kaftan-relaxed',
+    version: '1.0.0',
+    slot: 'top',
+    category: 'kaftan',
+    fabricId: 'silk-viscose',
+    hemY: KAFTAN_HEM_Y,
+    fitPoints: [
+      { key: 'chest', y: LANDMARK.bust },
+      { key: 'waist', y: LANDMARK.waist },
+      { key: 'hip', y: LANDMARK.hip },
     ],
   },
 ];
@@ -354,6 +415,88 @@ const JEANS_HANG: HangRule = {
   flareCmPerM: 0,
 };
 
+const DRESS_EASE: readonly EaseStop[] = [
+  { y: DRESS_MIDI_HEM_Y, easeCm: 28 },
+  { y: LANDMARK.midThigh, easeCm: 20 },
+  { y: LANDMARK.hip, easeCm: 14 },
+  { y: LANDMARK.waist, easeCm: 10 },
+  { y: LANDMARK.bust, easeCm: 9 },
+  { y: LANDMARK.chest, easeCm: 8 },
+  { y: LANDMARK.shoulder, easeCm: 6 },
+  { y: LANDMARK.neckBase, easeCm: 4 },
+];
+
+const DRESS_HANG: HangRule = {
+  supportY: LANDMARK.bust,
+  supportEaseCm: 9,
+  flareCmPerM: 18,
+};
+
+const ABAYA_EASE: readonly EaseStop[] = [
+  { y: ABAYA_HEM_Y, easeCm: 36 },
+  { y: LANDMARK.knee, easeCm: 30 },
+  { y: LANDMARK.hip, easeCm: 22 },
+  { y: LANDMARK.waist, easeCm: 20 },
+  { y: LANDMARK.bust, easeCm: 16 },
+  { y: LANDMARK.chest, easeCm: 14 },
+  { y: LANDMARK.shoulder, easeCm: 10 },
+  { y: LANDMARK.neckBase, easeCm: 6 },
+];
+
+const ABAYA_HANG: HangRule = {
+  supportY: LANDMARK.bust,
+  supportEaseCm: 16,
+  flareCmPerM: 20,
+};
+
+const ABAYA_SLEEVE_EASE: readonly EaseStop[] = [
+  { y: ARM_LANDMARK.wrist, easeCm: 14 },
+  { y: ARM_LANDMARK.forearm, easeCm: 15 },
+  { y: ARM_LANDMARK.elbow, easeCm: 14 },
+  { y: ARM_LANDMARK.upperArm, easeCm: 12 },
+  { y: ARM_LANDMARK.armTop, easeCm: 10 },
+];
+
+const SKIRT_EASE: readonly EaseStop[] = [
+  { y: SKIRT_HEM_Y, easeCm: 26 },
+  { y: LANDMARK.midThigh, easeCm: 18 },
+  { y: LANDMARK.thigh, easeCm: 14 },
+  { y: LANDMARK.crotch, easeCm: 10 },
+  { y: LANDMARK.hip, easeCm: 7 },
+  { y: LANDMARK.highHip, easeCm: 5 },
+  { y: JEANS_WAISTBAND_Y, easeCm: 4 },
+];
+
+const SKIRT_HANG: HangRule = {
+  supportY: JEANS_WAISTBAND_Y,
+  supportEaseCm: 4,
+  flareCmPerM: 35,
+};
+
+const KAFTAN_EASE: readonly EaseStop[] = [
+  { y: KAFTAN_HEM_Y, easeCm: 40 },
+  { y: LANDMARK.knee, easeCm: 32 },
+  { y: LANDMARK.hip, easeCm: 24 },
+  { y: LANDMARK.waist, easeCm: 22 },
+  { y: LANDMARK.bust, easeCm: 18 },
+  { y: LANDMARK.chest, easeCm: 15 },
+  { y: LANDMARK.shoulder, easeCm: 12 },
+  { y: LANDMARK.neckBase, easeCm: 7 },
+];
+
+const KAFTAN_HANG: HangRule = {
+  supportY: LANDMARK.bust,
+  supportEaseCm: 18,
+  flareCmPerM: 22,
+};
+
+const KAFTAN_SLEEVE_EASE: readonly EaseStop[] = [
+  { y: ARM_LANDMARK.forearm, easeCm: 16 },
+  { y: ARM_LANDMARK.elbow, easeCm: 15 },
+  { y: ARM_LANDMARK.upperArm, easeCm: 13 },
+  { y: ARM_LANDMARK.armTop, easeCm: 10 },
+];
+
 /** The finished panels of a garment, in the order they are lofted. */
 interface GarmentPanels {
   /** The panel that covers the torso or the seat. Fit readings above the crotch use it. */
@@ -475,6 +618,192 @@ function bottomPanels(
   };
 }
 
+function dressPanels(size: BodySize, layer: LayerDepth): GarmentPanels {
+  const stations = bodyStations(size);
+  const { torso, limb } = stations.segments;
+  const body = panelRings(
+    {
+      heights: [
+        DRESS_MIDI_HEM_Y,
+        LANDMARK.aboveKnee,
+        LANDMARK.midThigh,
+        LANDMARK.crotch,
+        LANDMARK.hip,
+        LANDMARK.highHip,
+        LANDMARK.waist,
+        LANDMARK.underBust,
+        LANDMARK.bust,
+        LANDMARK.chest,
+        LANDMARK.shoulder,
+        LANDMARK.shoulderTop,
+      ],
+      stations: stations.torso,
+      ease: DRESS_EASE,
+      segments: torso,
+      hang: DRESS_HANG,
+    },
+    layer,
+  );
+  const neckBody = ringAtHeight(stations.torso, TEE_NECK_Y);
+  const neck = clothOver(neckBody, neckBody.girthCm * 1.15, torso, 'base');
+  const sleeve = panelRings(
+    {
+      heights: [SLEEVE_HEM_Y, 1.28, ARM_LANDMARK.armTop],
+      stations: stations.arm,
+      ease: SLEEVE_EASE,
+      segments: limb,
+    },
+    layer,
+  );
+  return {
+    trunk: [...body, neck],
+    limb: sleeve,
+    trunkSegments: torso,
+    limbSegments: limb,
+    trunkCapEnd: false,
+  };
+}
+
+function abayaPanels(size: BodySize, layer: LayerDepth): GarmentPanels {
+  const stations = bodyStations(size);
+  const { torso, limb } = stations.segments;
+  const body = panelRings(
+    {
+      heights: [
+        ABAYA_HEM_Y,
+        LANDMARK.lowerCalf,
+        LANDMARK.calf,
+        LANDMARK.knee,
+        LANDMARK.midThigh,
+        LANDMARK.crotch,
+        LANDMARK.hip,
+        LANDMARK.highHip,
+        LANDMARK.waist,
+        LANDMARK.underBust,
+        LANDMARK.bust,
+        LANDMARK.chest,
+        LANDMARK.shoulder,
+        LANDMARK.shoulderTop,
+      ],
+      stations: stations.torso,
+      ease: ABAYA_EASE,
+      segments: torso,
+      hang: ABAYA_HANG,
+    },
+    layer,
+  );
+  const neckBody = ringAtHeight(stations.torso, TEE_NECK_Y);
+  const neck = clothOver(neckBody, neckBody.girthCm * 1.25, torso, 'base');
+  const sleeve = panelRings(
+    {
+      heights: [
+        ARM_LANDMARK.wrist,
+        0.87,
+        ARM_LANDMARK.forearm,
+        ARM_LANDMARK.elbow,
+        1.16,
+        1.28,
+        ARM_LANDMARK.armTop,
+      ],
+      stations: stations.arm,
+      ease: ABAYA_SLEEVE_EASE,
+      segments: limb,
+    },
+    layer,
+  );
+  return {
+    trunk: [...body, neck],
+    limb: sleeve,
+    trunkSegments: torso,
+    limbSegments: limb,
+    trunkCapEnd: false,
+  };
+}
+
+function skirtPanels(size: BodySize, layer: LayerDepth): GarmentPanels {
+  const stations = bodyStations(size);
+  const { torso, limb } = stations.segments;
+  const skirt = panelRings(
+    {
+      heights: [
+        SKIRT_HEM_Y,
+        LANDMARK.midThigh,
+        LANDMARK.thigh,
+        LANDMARK.crotch,
+        LANDMARK.hip,
+        LANDMARK.highHip,
+        JEANS_WAISTBAND_Y,
+      ],
+      stations: stations.torso,
+      ease: SKIRT_EASE,
+      segments: torso,
+      hang: SKIRT_HANG,
+    },
+    layer,
+  );
+  return {
+    trunk: skirt,
+    limb: [],
+    trunkSegments: torso,
+    limbSegments: limb,
+    trunkCapEnd: false,
+  };
+}
+
+function kaftanPanels(size: BodySize, layer: LayerDepth): GarmentPanels {
+  const stations = bodyStations(size);
+  const { torso, limb } = stations.segments;
+  const body = panelRings(
+    {
+      heights: [
+        KAFTAN_HEM_Y,
+        LANDMARK.lowerCalf,
+        LANDMARK.calf,
+        LANDMARK.knee,
+        LANDMARK.midThigh,
+        LANDMARK.crotch,
+        LANDMARK.hip,
+        LANDMARK.highHip,
+        LANDMARK.waist,
+        LANDMARK.underBust,
+        LANDMARK.bust,
+        LANDMARK.chest,
+        LANDMARK.shoulder,
+        LANDMARK.shoulderTop,
+      ],
+      stations: stations.torso,
+      ease: KAFTAN_EASE,
+      segments: torso,
+      hang: KAFTAN_HANG,
+    },
+    layer,
+  );
+  const neckBody = ringAtHeight(stations.torso, TEE_NECK_Y);
+  const neck = clothOver(neckBody, neckBody.girthCm * 1.25, torso, 'base');
+  const sleeve = panelRings(
+    {
+      heights: [
+        ARM_LANDMARK.forearm,
+        ARM_LANDMARK.elbow,
+        1.16,
+        1.28,
+        ARM_LANDMARK.armTop,
+      ],
+      stations: stations.arm,
+      ease: KAFTAN_SLEEVE_EASE,
+      segments: limb,
+    },
+    layer,
+  );
+  return {
+    trunk: [...body, neck],
+    limb: sleeve,
+    trunkSegments: torso,
+    limbSegments: limb,
+    trunkCapEnd: false,
+  };
+}
+
 function panelsFor(id: GarmentBlockId, size: BodySize, layer: LayerDepth): GarmentPanels {
   switch (id) {
     case 'tee-crew-relaxed':
@@ -487,6 +816,14 @@ function panelsFor(id: GarmentBlockId, size: BodySize, layer: LayerDepth): Garme
       return bottomPanels(size, layer, 'wide');
     case 'shorts-relaxed':
       return bottomPanels(size, layer, 'shorts');
+    case 'dress-midi':
+      return dressPanels(size, layer);
+    case 'abaya-open':
+      return abayaPanels(size, layer);
+    case 'skirt-a-line':
+      return skirtPanels(size, layer);
+    case 'kaftan-relaxed':
+      return kaftanPanels(size, layer);
   }
 }
 
@@ -502,14 +839,19 @@ export function garmentMesh(
   layer: LayerDepth = 'base',
 ): MeshData {
   const panels = panelsFor(id, size, layer);
-  return mergeMeshes([
+  const parts: MeshData[] = [
     loft(panels.trunk, {
       segments: panels.trunkSegments,
       capEnd: panels.trunkCapEnd,
     }),
-    loft(panels.limb, { segments: panels.limbSegments }),
-    loft(mirrored(panels.limb), { segments: panels.limbSegments }),
-  ]);
+  ];
+  if (panels.limb.length >= 2) {
+    parts.push(
+      loft(panels.limb, { segments: panels.limbSegments }),
+      loft(mirrored(panels.limb), { segments: panels.limbSegments }),
+    );
+  }
+  return mergeMeshes(parts);
 }
 
 /**
@@ -528,7 +870,10 @@ export function garmentGirthAt(
   const trunkBottom = panels.trunk[0];
   const definition = block(id);
   const onLimb =
-    definition?.slot === 'bottom' && trunkBottom !== undefined && y < trunkBottom.y;
+    definition?.slot === 'bottom' &&
+    panels.limb.length >= 2 &&
+    trunkBottom !== undefined &&
+    y < trunkBottom.y;
   return ringAtHeight(onLimb ? panels.limb : panels.trunk, y).girthCm;
 }
 

@@ -35,9 +35,10 @@ interface CatalogRow extends Record<string, unknown> {
 const SIZES: readonly BodySize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 const BLOCKS = new Set<string>(GARMENT_BLOCKS.map((candidate) => candidate.id));
 
-const SLOT_LABEL: Readonly<Record<'top' | 'bottom', string>> = {
+const SLOT_LABEL: Readonly<Record<'top' | 'bottom' | 'outer', string>> = {
   top: 'قطعة علوية',
   bottom: 'قطعة سفلية',
+  outer: 'عباية ومعاطف',
 };
 
 function field(source: unknown, name: string): unknown {
@@ -161,7 +162,7 @@ export function toProduct(row: CatalogRow): CatalogProduct | undefined {
   if (
     typeof blockId !== 'string' ||
     !BLOCKS.has(blockId) ||
-    (slot !== 'top' && slot !== 'bottom') ||
+    (slot !== 'top' && slot !== 'bottom' && slot !== 'outer') ||
     typeof colorHex !== 'string' ||
     picture === undefined
   ) {

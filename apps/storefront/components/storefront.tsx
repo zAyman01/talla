@@ -4,15 +4,11 @@ import {
   BagIcon,
   CheckCircleIcon,
   CoatHangerIcon,
-  InfoIcon,
-  MinusIcon,
-  PlusIcon,
-  XIcon,
 } from '@phosphor-icons/react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { BodySize } from '@talla/shared';
 import type { FitVerdict } from '@talla/blocks';
@@ -22,21 +18,24 @@ import type { DeviceTier } from '@talla/shared';
 import type { DressedGarment } from '@talla/viewer';
 import type { CatalogProduct } from '../product.ts';
 import { initialOutfit, toggleOutfit } from '../outfit.ts';
+import { CheckoutModal, type CheckoutLineItem } from './checkout-modal.tsx';
+import { Suggestions } from './suggestions.tsx';
 
 const Mannequin = dynamic(() => import('./mannequin.tsx').then((m) => m.Mannequin), {
   ssr: false,
   loading: () => <div className="viewer-stage stage-skeleton" aria-hidden="true" />,
 });
 
-/**
- * The catalogue arrives as a prop from the server component, read from PostgreSQL under
- * the tenant transaction. It used to be a two-element array declared right here, which
- * meant the page could not show a store anything it actually sells.
- */
 type Product = CatalogProduct;
 type ProductId = string;
 type CatalogSourceFilter = 'all' | 'Farid Store' | 'Clother Wear';
 type CatalogSlotFilter = 'all' | Product['slot'];
+
+interface CartItem {
+  readonly id: ProductId;
+  readonly size: BodySize;
+  readonly quantity: number;
+}
 
 const SIZES: readonly BodySize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -90,43 +89,36 @@ export function Storefront({
     initialOutfit(products),
   );
   const [size, setSize] = useState<BodySize>('L');
-  const [cart, setCart] = useState<readonly ProductId[]>([]);
+  const [cart, setCart] = useState<readonly CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [viewerAvailable, setViewerAvailable] = useState(true);
-  const [sourceFilter, setSourceFilter] = useState<CatalogSourceFilter>('Farid Store');
+  const [sourceFilter, setSourceFilter] = useState<CatalogSourceFilter>('all');
   const [slotFilter, setSlotFilter] = useState<CatalogSlotFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
   /**
    * The device tier, decided before the renderer is fetched (spec 11.2).
-   *
-   * `undefined` means not decided yet, which is the state the server renders in: the
-   * probe reads a WebGL context and a connection, and neither exists there.
-   *
-   * The order matters more than it looks. Mounting the viewer and letting it report back
-   * that this device cannot run it costs a chunk of Three.js, a WebGL context and a
-   * render, all of it on the devices least able to afford any of the three, and only then
-   * starts loading the photographs a tier C buyer was always going to see. Asking first
-   * costs one synchronous probe. `probeTier` comes from the viewer module's index, which
-   * carries no renderer, so this decision does not drag the engine in with it.
    */
   const [tier, setTier] = useState<DeviceTier | undefined>(undefined);
-  const cartDialog = useRef<HTMLDialogElement>(null);
 
   const outfit = useMemo(
     () => products.filter((product) => chosen.has(product.id)),
-    [chosen],
+    [chosen, products],
   );
-  const cartItems = useMemo(
-    () => products.filter((product) => cart.includes(product.id)),
-    [cart],
-  );
+
   const visibleProducts = useMemo(
     () =>
-      products.filter(
-        (product) =>
-          (sourceFilter === 'all' || product.source?.merchant === sourceFilter) &&
-          (slotFilter === 'all' || product.slot === slotFilter),
-      ),
-    [products, slotFilter, sourceFilter],
+      products.filter((product) => {
+        const matchesSource =
+          sourceFilter === 'all' || product.source?.merchant === sourceFilter;
+        const matchesSlot = slotFilter === 'all' || product.slot === slotFilter;
+        const matchesSearch =
+          searchQuery.trim() === '' ||
+          product.name.toLowerCase().includes(searchQuery.trim().toLowerCase()) ||
+          product.categoryLabel.toLowerCase().includes(searchQuery.trim().toLowerCase());
+        return matchesSource && matchesSlot && matchesSearch;
+      }),
+    [products, slotFilter, sourceFilter, searchQuery],
   );
 
   /**
@@ -145,9 +137,7 @@ export function Storefront({
   }, [outfit]);
 
   /**
-   * Fit is always read at the base layer. The `over` variant carries the clearance a top
-   * needs to fall past a waistband, which is a rendering concern; quoting it would make a
-   * tee report a looser fit the moment a buyer adds jeans, and the tee has not changed.
+   * Fit is always read at the base layer.
    */
   const fits = useMemo(
     () =>
@@ -162,38 +152,81 @@ export function Storefront({
     [outfit, size],
   );
 
-  /**
-   * Whether the figure is photographs rather than a render.
-   *
-   * Two ways to get here and one answer: a tier the ladder sends to the fallback, and a
-   * context the viewer had and lost. Deriving it once is what keeps the stage and the
-   * note beneath it from disagreeing about which of the two a buyer is looking at.
-   */
   const photographic =
     tier !== undefined && (!viewerAvailable || TIER_BUDGET[tier].usesTurntable);
 
   const unavailable = outfit.filter((product) => !product.sizes.includes(size));
   const orderable = outfit.filter((product) => product.sizes.includes(size));
   const outfitTotal = orderable.reduce((sum, product) => sum + product.price, 0);
-  const cartTotal = cartItems.reduce((sum, product) => sum + product.price, 0);
+
+  const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const cartLines: readonly CheckoutLineItem[] = useMemo(
+    () =>
+      cart.flatMap((item) => {
+        const prod = products.find((p) => p.id === item.id);
+        if (!prod) return [];
+        return [
+          {
+            id: prod.id,
+            name: prod.name,
+            size: item.size,
+            quantity: item.quantity,
+            price: prod.price,
+            image: prod.image,
+            imageWidth: prod.imageWidth,
+            imageHeight: prod.imageHeight,
+          },
+        ];
+      }),
+    [cart, products],
+  );
 
   useEffect(() => {
     setTier(probeTier());
   }, []);
-
-  useEffect(() => {
-    const dialog = cartDialog.current;
-    if (!dialog || !cartOpen || dialog.open) return;
-    dialog.showModal();
-  }, [cartOpen]);
 
   function toggle(id: ProductId): void {
     setChosen((current) => toggleOutfit(products, current, id));
   }
 
   function addOutfit(): void {
-    setCart(orderable.map((product) => product.id));
+    setCart((current) => {
+      const next = [...current];
+      for (const product of orderable) {
+        const existingIndex = next.findIndex(
+          (item) => item.id === product.id && item.size === size,
+        );
+        if (existingIndex >= 0 && next[existingIndex]) {
+          const existing = next[existingIndex];
+          next[existingIndex] = {
+            id: existing.id,
+            size: existing.size,
+            quantity: existing.quantity + 1,
+          };
+        } else {
+          next.push({ id: product.id, size, quantity: 1 });
+        }
+      }
+      return next;
+    });
     setCartOpen(true);
+  }
+
+  function updateQuantity(id: ProductId, itemSize: BodySize, delta: number): void {
+    setCart((current) =>
+      current
+        .map((item) =>
+          item.id === id && item.size === itemSize
+            ? { id: item.id, size: item.size, quantity: item.quantity + delta }
+            : item,
+        )
+        .filter((item) => item.quantity > 0),
+    );
+  }
+
+  function clearCart(): void {
+    setCart([]);
   }
 
   return (
@@ -208,11 +241,11 @@ export function Storefront({
           onClick={() => {
             setCartOpen(true);
           }}
-          aria-label={`السلة، ${String(cart.length)} قطع`}
+          aria-label={`السلة، ${String(totalCartCount)} قطع`}
         >
           <BagIcon size={22} weight="regular" />
           <span>السلة</span>
-          <strong>{cart.length}</strong>
+          <strong>{totalCartCount}</strong>
         </button>
       </header>
 
@@ -237,19 +270,6 @@ export function Storefront({
                 </div>
               </div>
             ) : tier === undefined || photographic ? (
-              /**
-               * The photographs, and the first thing rendered.
-               *
-               * They are in the server's HTML, so the browser's preload scanner finds
-               * them before any JavaScript runs. The alternative, an empty stage until
-               * the tier is known, put the largest element on the page behind the whole
-               * client chain: bundle, hydrate, probe, then render, then fetch. That is
-               * 3.6 s on the throttled reference profile against a 2.5 s budget, and it
-               * is slowest on the tier C devices that never get anything else.
-               *
-               * On tier A and B the canvas replaces them once the renderer is ready, so
-               * they double as the poster frame for a viewer that is still loading.
-               */
               <div className="viewer-stage">
                 <div className="outfit-images">
                   {outfit.map((product) => (
@@ -260,9 +280,6 @@ export function Storefront({
                         height={product.imageHeight}
                         sizes="(max-width: 767px) 46vw, 24vw"
                         alt={product.name}
-                        // This is the viewer, for the buyers who cannot have one. It is
-                        // the largest element on their screen and the one the page is
-                        // waiting on, so it is never lazy.
                         priority
                       />
                       <figcaption>{product.name}</figcaption>
@@ -375,6 +392,12 @@ export function Storefront({
                 </p>
               </div>
             )}
+
+            <Suggestions
+              currentOutfit={outfit}
+              allProducts={products}
+              onTryOn={toggle}
+            />
           </section>
 
           <section className="catalog-panel" aria-labelledby="pieces-title">
@@ -385,13 +408,28 @@ export function Storefront({
               </span>
             </div>
 
+            <div className="catalog-search-wrap">
+              <label htmlFor="catalog-search" className="catalog-search-label">
+                ابحثي في القطع
+              </label>
+              <input
+                id="catalog-search"
+                type="search"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                }}
+                placeholder="ابحثي بالاسم أو النوع…"
+              />
+            </div>
+
             <div className="catalog-filters">
               <div role="group" aria-label="مصدر المنتجات">
                 {(
                   [
+                    ['all', 'كل المتاجر'],
                     ['Farid Store', 'Farid'],
                     ['Clother Wear', 'Clother'],
-                    ['all', 'الكل'],
                   ] as const
                 ).map(([value, label]) => (
                   <button
@@ -412,6 +450,7 @@ export function Storefront({
                     ['all', 'كل الأنواع'],
                     ['top', 'علوي'],
                     ['bottom', 'سفلي'],
+                    ['outer', 'عبايات ومعاطف'],
                   ] as const
                 ).map(([value, label]) => (
                   <button
@@ -500,89 +539,15 @@ export function Storefront({
         </p>
       )}
 
-      {cartOpen && (
-        <dialog
-          ref={cartDialog}
-          className="cart-dialog"
-          aria-label="سلة التسوق"
-          onClose={() => {
-            setCartOpen(false);
-          }}
-          onClick={(event) => {
-            if (event.target === event.currentTarget) event.currentTarget.close();
-          }}
-        >
-          <div className="cart-sheet">
-            <div className="cart-heading">
-              <h2>سلة التسوق</h2>
-              <button
-                className="icon-button"
-                aria-label="إغلاق السلة"
-                autoFocus
-                onClick={() => {
-                  cartDialog.current?.close();
-                }}
-              >
-                <XIcon size={22} weight="regular" />
-              </button>
-            </div>
-            {cartItems.length === 0 ? (
-              <div className="cart-empty">
-                <BagIcon size={32} weight="regular" />
-                <strong>السلة فارغة</strong>
-                <span>أضيفي طلة من الكتالوج أولاً.</span>
-              </div>
-            ) : (
-              <>
-                <ul className="cart-list">
-                  {cartItems.map((product) => (
-                    <li key={product.id}>
-                      <Image
-                        src={product.image}
-                        width={product.imageWidth}
-                        height={product.imageHeight}
-                        sizes="64px"
-                        alt=""
-                      />
-                      <div>
-                        <strong>{product.name}</strong>
-                        <span>المقاس {size}</span>
-                        <span className="price numeric">{money(product.price)}</span>
-                      </div>
-                      <div className="quantity" aria-label="الكمية">
-                        <button aria-label="تقليل الكمية" disabled>
-                          <MinusIcon size={16} />
-                        </button>
-                        <span>1</span>
-                        <button aria-label="زيادة الكمية" disabled>
-                          <PlusIcon size={16} />
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                <div className="cart-total">
-                  <span>الإجمالي</span>
-                  <strong className="numeric">{money(cartTotal)}</strong>
-                </div>
-                <div className="checkout-disabled">
-                  <InfoIcon size={20} weight="regular" />
-                  <p>
-                    تسجيل الطلب متوقف في متجر الاختبار حتى ربط خدمة تأكيد رقم الهاتف. لن
-                    تُحفظ بيانات شخصية من هذه الصفحة.
-                  </p>
-                </div>
-                <button className="primary full-button" disabled>
-                  تأكيد الهاتف وإتمام الطلب
-                </button>
-                <Link href="/lab" className="lab-link">
-                  افتح فحوصات الصور والأصول المرجعية
-                </Link>
-              </>
-            )}
-          </div>
-        </dialog>
-      )}
+      <CheckoutModal
+        isOpen={cartOpen}
+        onClose={() => {
+          setCartOpen(false);
+        }}
+        items={cartLines}
+        onUpdateQuantity={updateQuantity}
+        onClearCart={clearCart}
+      />
     </div>
   );
 }
