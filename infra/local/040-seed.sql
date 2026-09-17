@@ -12,8 +12,8 @@ VALUES
     'Printed cotton tee',
     65000,
     'ready',
-    '{"style":{"slot":"top"}}',
-    '{"catalog_image":{"url":"/references/tee-front.webp","width":1795,"height":2048}}'
+    '{"block_id":"tee-crew-relaxed","style":{"slot":"top","dominant_colors":["#17181a"]}}',
+    '{"catalog_image":{"url":"/references/tee-front.webp","width":1795,"height":2048},"color_hex":"#17181a","color_label":"أسود"}'
   ),
   (
     '11111111-1111-4111-8111-111111111111',
@@ -22,8 +22,8 @@ VALUES
     'Straight blue jeans',
     110000,
     'ready',
-    '{"style":{"slot":"bottom"}}',
-    '{"catalog_image":{"url":"/references/jeans.webp","width":435,"height":650}}'
+    '{"block_id":"jeans-straight","style":{"slot":"bottom","dominant_colors":["#2a4b7c"]}}',
+    '{"catalog_image":{"url":"/references/jeans.webp","width":435,"height":650},"color_hex":"#2a4b7c","color_label":"أزرق"}'
   )
 ON CONFLICT (tenant_id,id) DO NOTHING;
 

@@ -127,7 +127,10 @@ export function Storefront({
     return outfit.map((product) => ({
       blockId: product.blockId,
       colorHex: product.colorHex,
-      layer: product.slot === 'top' && hasBottom ? ('over' as const) : ('base' as const),
+      layer:
+        product.slot === 'outer' || (product.slot === 'top' && hasBottom)
+          ? ('over' as const)
+          : ('base' as const),
       label: product.name,
     }));
   }, [outfit]);

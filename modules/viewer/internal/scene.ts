@@ -1,8 +1,19 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import type { BodySize, DeviceTier } from '@talla/shared';
 import type { GarmentBlockId, LayerDepth, MeshData } from '@talla/blocks';
-import { FIGURE_BOUNDS, bodyMesh, garmentMesh, settleStart } from '@talla/blocks';
+import {
+  FIGURE_BOUNDS,
+  bodyMesh,
+  garmentFabric,
+  garmentMesh,
+  settleStart,
+} from '@talla/blocks';
 
 /**
  * The mannequin scene: a WebGL figure that wears blocks and settles them.
@@ -82,11 +93,11 @@ export type MannequinView = 'front' | 'side' | 'back';
 const SETTLE_LIFT_M = 0.05;
 const SETTLE_EXPAND = 1.06;
 
-/** Vertical field of view, degrees. Narrow, so the figure reads with little perspective. */
-const FIELD_OF_VIEW = 32;
+/** Vertical field of view, degrees. Narrow fashion editorial framing (28 deg). */
+const FIELD_OF_VIEW = 28;
 
 /** How much of the stage's height the figure fills at rest. */
-const FIGURE_FILL = 0.9;
+const FIGURE_FILL = 0.88;
 
 interface Blend {
   readonly from: Float32Array;
@@ -116,14 +127,14 @@ function toGeometry(data: MeshData): THREE.BufferGeometry {
 }
 
 /**
- * Procedural micro-surface normal textures for fabric realism under studio directional lights.
- * Generates knit jersey loops or diagonal denim twill weave.
+ * Procedural high-resolution (512x512) micro-surface normal textures.
+ * Tailored for jersey knit, denim twill, linen slub, and satin silk.
  */
 function createFabricNormalTexture(
-  kind: 'jersey' | 'twill',
+  kind: 'jersey' | 'twill' | 'linen' | 'silk',
 ): THREE.CanvasTexture | undefined {
   if (typeof document === 'undefined') return undefined;
-  const size = 128;
+  const size = 512;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -137,16 +148,32 @@ function createFabricNormalTexture(
     for (let x = 0; x < size; x += 1) {
       let nx = 0;
       let ny = 0;
+
       if (kind === 'twill') {
-        const diag = Math.sin(((x + y) / 4) * Math.PI);
-        const cross = Math.sin(((x - y) / 4) * Math.PI) * 0.3;
-        nx = diag * 0.4;
-        ny = cross * 0.4;
+        // Crisp 45-degree diagonal twill with fine transverse weave
+        const diag = Math.sin(((x + y) / 5) * Math.PI);
+        const cross = Math.sin(((x - y) / 3) * Math.PI) * 0.25;
+        nx = diag * 0.5;
+        ny = (diag + cross) * 0.5;
+      } else if (kind === 'linen') {
+        // Organic irregular warp and weft slub linen
+        const warp = Math.sin((x / 4.5 + Math.sin(y / 18) * 0.4) * Math.PI);
+        const weft = Math.sin((y / 4.5 + Math.sin(x / 18) * 0.4) * Math.PI);
+        nx = warp * 0.45;
+        ny = weft * 0.45;
+      } else if (kind === 'silk') {
+        // Micro-fine satin weave
+        const grainX = Math.sin(x * 0.8) * 0.12;
+        const grainY = Math.cos(y * 0.8) * 0.12;
+        nx = grainX;
+        ny = grainY;
       } else {
-        const loopX = Math.sin((x / 2) * Math.PI);
-        const loopY = Math.cos((y / 3) * Math.PI);
-        nx = loopX * 0.25;
-        ny = loopY * 0.35;
+        // Jersey knit interlocked loops
+        const loopX = Math.sin((x / 3) * Math.PI);
+        const loopY = Math.cos((y / 4.5) * Math.PI);
+        const rib = Math.sin((x / 6) * Math.PI) * 0.2;
+        nx = (loopX + rib) * 0.35;
+        ny = loopY * 0.4;
       }
 
       const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny));
@@ -162,7 +189,34 @@ function createFabricNormalTexture(
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(16, 16);
+  texture.repeat.set(24, 24);
+  texture.needsUpdate = true;
+  return texture;
+}
+
+/**
+ * Soft radial falloff texture for the studio ground contact shadow.
+ */
+function createContactShadowTexture(): THREE.CanvasTexture | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return undefined;
+
+  const center = size / 2;
+  const gradient = ctx.createRadialGradient(center, center, 0, center, center, center);
+  gradient.addColorStop(0, 'rgba(16, 18, 20, 0.42)');
+  gradient.addColorStop(0.35, 'rgba(16, 18, 20, 0.22)');
+  gradient.addColorStop(0.7, 'rgba(16, 18, 20, 0.06)');
+  gradient.addColorStop(1, 'rgba(16, 18, 20, 0)');
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+
+  const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
   return texture;
 }
@@ -179,68 +233,108 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     alpha: true,
-    powerPreference: 'low-power',
+    powerPreference: 'high-performance',
   });
 
   let disposed = false;
   let frame = 0;
 
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.08;
   renderer.shadowMap.enabled = options.tier === 'A';
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.setAttribute('role', 'img');
   host.appendChild(renderer.domElement);
 
+  // Procedural fabric normal maps
   const jerseyNormal = createFabricNormalTexture('jersey');
   const twillNormal = createFabricNormalTexture('twill');
+  const linenNormal = createFabricNormalTexture('linen');
+  const silkNormal = createFabricNormalTexture('silk');
+  const contactTexture = createContactShadowTexture();
+
+  const normalMapFor = (
+    kind: 'jersey' | 'twill' | 'linen' | 'silk',
+  ): THREE.CanvasTexture | undefined => {
+    switch (kind) {
+      case 'twill':
+        return twillNormal;
+      case 'linen':
+        return linenNormal;
+      case 'silk':
+        return silkNormal;
+      case 'jersey':
+      default:
+        return jerseyNormal;
+    }
+  };
 
   const scene = new THREE.Scene();
+
+  // Generate studio ambient reflections via PMREM RoomEnvironment
+  const pmremGenerator = new THREE.PMREMGenerator(renderer);
+  pmremGenerator.compileEquirectangularShader();
+  const roomEnv = new RoomEnvironment();
+  const envTexture = pmremGenerator.fromScene(roomEnv, 0.04).texture;
+  scene.environment = envTexture;
+  scene.environmentIntensity = 0.85;
+
   const camera = new THREE.PerspectiveCamera(FIELD_OF_VIEW, 1, 0.05, 50);
-  // Frame the figure that exists, not the stature it is graded for. The form is cut at
-  // the neck, so aiming at the waist puts the hem off the bottom of the stage.
   const figureHeight = FIGURE_BOUNDS.top - FIGURE_BOUNDS.bottom;
   const centerY = (FIGURE_BOUNDS.top + FIGURE_BOUNDS.bottom) / 2;
   const distance =
     figureHeight / FIGURE_FILL / (2 * Math.tan((FIELD_OF_VIEW / 2) * (Math.PI / 180)));
   const target = new THREE.Vector3(0, centerY, 0);
-  camera.position.set(0, centerY + 0.06, distance);
+  camera.position.set(0, centerY + 0.05, distance);
 
-  // A neutral studio rig gives the near-black shell enough highlights to describe the
-  // waist, face and back from every angle without tinting the garment colours.
-  scene.add(new THREE.HemisphereLight(style.lightColor, style.groundColor, 1.35));
-  const key = new THREE.DirectionalLight(style.lightColor, 3.1);
-  key.position.set(2.4, 3.2, 3.8);
-  key.castShadow = options.tier === 'A';
-  key.shadow.mapSize.set(1024, 1024);
-  key.shadow.camera.near = 0.1;
-  key.shadow.camera.far = 8;
-  key.shadow.camera.left = -1.1;
-  key.shadow.camera.right = 1.1;
-  key.shadow.camera.top = 2.1;
-  key.shadow.camera.bottom = -0.2;
-  key.shadow.bias = -0.0004;
-  scene.add(key);
-  const fill = new THREE.DirectionalLight(style.lightColor, 1.25);
-  fill.position.set(-2.6, 1.7, 2.1);
-  scene.add(fill);
-  const rim = new THREE.DirectionalLight(style.lightColor, 2.45);
-  rim.position.set(-1.8, 2.5, -3.6);
-  scene.add(rim);
-  const face = new THREE.PointLight(style.lightColor, 0.55, 5, 1.4);
-  face.position.set(0, 1.75, 2.2);
-  scene.add(face);
+  // Five-point fashion photography studio lighting rig
+  const hemiLight = new THREE.HemisphereLight(style.lightColor, style.groundColor, 0.95);
+  scene.add(hemiLight);
+
+  // 1. Key Light: High-angle directional light with soft shadow mapping
+  const keyLight = new THREE.DirectionalLight(style.lightColor, 3.4);
+  keyLight.position.set(2.5, 3.8, 3.2);
+  keyLight.castShadow = options.tier === 'A';
+  keyLight.shadow.mapSize.set(2048, 2048);
+  keyLight.shadow.camera.near = 0.1;
+  keyLight.shadow.camera.far = 10;
+  keyLight.shadow.camera.left = -1.2;
+  keyLight.shadow.camera.right = 1.2;
+  keyLight.shadow.camera.top = 2.2;
+  keyLight.shadow.camera.bottom = -0.3;
+  keyLight.shadow.bias = -0.00015;
+  keyLight.shadow.radius = 2.5;
+  scene.add(keyLight);
+
+  // 2. Fill Light: Softer cool-side light to balance contrast
+  const fillLight = new THREE.DirectionalLight(style.lightColor, 1.4);
+  fillLight.position.set(-2.8, 2.2, 2.4);
+  scene.add(fillLight);
+
+  // 3. High Rim/Contour Light: Dramatic separation of figure silhouette from background
+  const rimLight = new THREE.DirectionalLight(style.lightColor, 3.2);
+  rimLight.position.set(-1.6, 3.2, -3.4);
+  scene.add(rimLight);
+
+  // 4. Secondary Contour/Kick Light
+  const kickLight = new THREE.DirectionalLight(style.lightColor, 1.8);
+  kickLight.position.set(2.2, 2.4, -2.8);
+  scene.add(kickLight);
+
+  // 5. Soft Front/Chest Point Light
+  const faceLight = new THREE.PointLight(style.lightColor, 0.5, 5, 1.8);
+  faceLight.position.set(0, 1.8, 2.2);
+  scene.add(faceLight);
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.target.copy(target);
-  controls.enableDamping = false;
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.06;
   controls.enablePan = false;
   controls.minDistance = distance * 0.55;
   controls.maxDistance = distance * 1.35;
-  // Never from underneath. Below the hem the loft is open, and a buyer who finds that
-  // hole stops believing the render.
   controls.minPolarAngle = Math.PI * 0.22;
   controls.maxPolarAngle = Math.PI * 0.62;
   controls.update();
@@ -248,13 +342,31 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
   const figure = new THREE.Group();
   scene.add(figure);
 
-  const groundGeometry = new THREE.CircleGeometry(0.34, 64);
+  // Studio Ground Setup:
+  // - A soft radial contact shadow disc that grounds the figure naturally
+  // - A dynamic live shadow catcher on Tier A
+  const groundGroup = new THREE.Group();
+  scene.add(groundGroup);
+
+  const contactGeometry = new THREE.PlaneGeometry(1.2, 1.2);
+  const contactMaterial = new THREE.MeshBasicMaterial({
+    ...(contactTexture ? { map: contactTexture } : {}),
+    transparent: true,
+    depthWrite: false,
+    opacity: 0.85,
+  });
+  const contactMesh = new THREE.Mesh(contactGeometry, contactMaterial);
+  contactMesh.rotation.x = -Math.PI / 2;
+  contactMesh.position.y = FIGURE_BOUNDS.bottom - 0.002;
+  groundGroup.add(contactMesh);
+
+  const groundGeometry = new THREE.CircleGeometry(0.75, 64);
   const groundMaterial =
     options.tier === 'A'
-      ? new THREE.ShadowMaterial({ color: 0x08090a, opacity: 0.24 })
+      ? new THREE.ShadowMaterial({ color: 0x0a0c0e, opacity: 0.32 })
       : new THREE.MeshBasicMaterial({
-          color: 0x08090a,
-          opacity: 0.11,
+          color: 0x0a0c0e,
+          opacity: 0.1,
           transparent: true,
           depthWrite: false,
         });
@@ -262,24 +374,24 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = FIGURE_BOUNDS.bottom - 0.004;
   ground.receiveShadow = options.tier === 'A';
-  scene.add(ground);
+  groundGroup.add(ground);
 
+  // Luxury retail display mannequin material: deep clearcoat + refined sheen
   const bodyGeometry = toGeometry(bodyMesh(options.size));
+  const bodyMaterial = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color(style.mannequinColor),
+    roughness: 0.22,
+    metalness: 0.05,
+    clearcoat: 0.88,
+    clearcoatRoughness: 0.12,
+    sheen: 0.35,
+    sheenColor: new THREE.Color(0xffffff),
+    sheenRoughness: 0.3,
+    reflectivity: 0.65,
+  });
   const body: Piece = {
     geometry: bodyGeometry,
-    mesh: new THREE.Mesh(
-      bodyGeometry,
-      new THREE.MeshPhysicalMaterial({
-        color: new THREE.Color(style.mannequinColor),
-        roughness: 0.38,
-        metalness: 0.02,
-        clearcoat: 0.45,
-        clearcoatRoughness: 0.22,
-        sheen: 0.12,
-        sheenColor: new THREE.Color(0xffffff),
-        sheenRoughness: 0.4,
-      }),
-    ),
+    mesh: new THREE.Mesh(bodyGeometry, bodyMaterial),
     blend: undefined,
   };
   body.mesh.castShadow = options.tier === 'A';
@@ -288,6 +400,29 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
 
   const worn = new Map<GarmentBlockId, Piece>();
   let currentSize = options.size;
+
+  // Post-processing setup for Tier A: subtle bloom on highlights
+  let composer: EffectComposer | undefined;
+  let bloomPass: UnrealBloomPass | undefined;
+
+  function initComposer(width: number, height: number): void {
+    if (options.tier !== 'A' || typeof window === 'undefined') return;
+    try {
+      composer = new EffectComposer(renderer);
+      composer.addPass(new RenderPass(scene, camera));
+      bloomPass = new UnrealBloomPass(
+        new THREE.Vector2(width, height),
+        0.12, // subtle gleam on clearcoat and silk
+        0.35, // blur radius
+        0.88, // threshold
+      );
+      composer.addPass(bloomPass);
+      composer.addPass(new OutputPass());
+    } catch {
+      composer = undefined;
+      bloomPass = undefined;
+    }
+  }
 
   const draw = (): void => {
     if (disposed || frame) return;
@@ -320,15 +455,21 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
     for (const piece of worn.values()) {
       if (applyBlend(piece, now)) running = true;
     }
-    renderer.render(scene, camera);
-    if (running) draw();
+
+    // Damped controls return true while camera momentum settles
+    const controlsMoving = controls.update();
+
+    if (composer && options.tier === 'A') {
+      composer.render();
+    } else {
+      renderer.render(scene, camera);
+    }
+
+    if (running || controlsMoving) draw();
   }
 
   function startBlend(piece: Piece, to: Float32Array, durationMs: number): void {
     const current = piece.geometry.getAttribute('position').array as Float32Array;
-    // Blending from wherever the mesh is right now is what makes the settle
-    // interruptible: a second tap mid-fall continues from the pose on screen
-    // rather than snapping back to the start (spec 14.2).
     piece.blend = {
       from: Float32Array.from(current),
       to,
@@ -340,8 +481,6 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
 
   function dress(next: readonly DressedGarment[], forSize: BodySize): void {
     if (disposed) return;
-    // A canvas has no readable content, so the label has to carry what is on the
-    // figure. It is the only description a screen reader can get from this view.
     const wornLabels = next.map((garment) => garment.label).join('، ');
     renderer.domElement.setAttribute(
       'aria-label',
@@ -351,8 +490,6 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
     );
     if (forSize !== currentSize) {
       currentSize = forSize;
-      // No fetch. Body size is a vertex blend across the morph target, which is the
-      // whole point of shipping sizes as deltas (ADR-0003).
       startBlend(body, bodyMesh(forSize).positions, style.morphMs);
     }
     const wanted = new Set(next.map((garment) => garment.blockId));
@@ -365,28 +502,45 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
     }
     for (const garment of next) {
       const rest = garmentMesh(garment.blockId, forSize, garment.layer);
+      const fabricPreset = garmentFabric(garment.blockId);
+      const normalKind = fabricPreset.normalKind ?? 'jersey';
+      const normalMap = normalMapFor(normalKind);
+      const baseColor = new THREE.Color(garment.colorHex);
+      const sheenColor = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.35);
+
       const existing = worn.get(garment.blockId);
       if (existing) {
-        (existing.mesh.material as THREE.MeshStandardMaterial).color.set(
-          garment.colorHex,
-        );
+        const mat = existing.mesh.material as THREE.MeshPhysicalMaterial;
+        mat.color.copy(baseColor);
+        mat.sheenColor.copy(sheenColor);
         startBlend(existing, rest.positions, style.morphMs);
         continue;
       }
+
       const start = settleStart(rest, { liftM: SETTLE_LIFT_M, expand: SETTLE_EXPAND });
       const geometry = toGeometry(start);
-      const isDenim = garment.blockId.includes('jean');
-      const normalMap = isDenim ? twillNormal : jerseyNormal;
-      const mesh = new THREE.Mesh(
-        geometry,
-        new THREE.MeshStandardMaterial({
-          color: new THREE.Color(garment.colorHex),
-          roughness: isDenim ? 0.84 : 0.72,
-          metalness: 0,
-          ...(normalMap ? { normalMap, normalScale: new THREE.Vector2(0.35, 0.35) } : {}),
-          side: THREE.DoubleSide,
-        }),
-      );
+
+      // Fabric-aware PBR material
+      const normalScale = fabricPreset.normalScale ?? 0.45;
+      const material = new THREE.MeshPhysicalMaterial({
+        color: baseColor,
+        roughness: fabricPreset.roughness ?? 0.76,
+        metalness: 0,
+        sheen: fabricPreset.sheen ?? 0.4,
+        sheenRoughness: fabricPreset.sheenRoughness ?? 0.45,
+        sheenColor,
+        clearcoat: fabricPreset.clearcoat ?? 0,
+        clearcoatRoughness: fabricPreset.clearcoatRoughness ?? 0,
+        ...(normalMap
+          ? {
+              normalMap,
+              normalScale: new THREE.Vector2(normalScale, normalScale),
+            }
+          : {}),
+        side: THREE.DoubleSide,
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
       mesh.castShadow = options.tier === 'A';
       mesh.receiveShadow = options.tier === 'A';
       mesh.renderOrder = garment.layer === 'over' ? 2 : 1;
@@ -398,21 +552,17 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
     draw();
   }
 
-  /**
-   * Match the canvas to its host.
-   *
-   * Called once before the first frame, and not left to the observer alone. A renderer
-   * starts at Three's default 300x150, the stage stretches it to fill, and the gap
-   * between the canvas appearing and the first observation is a frame of a figure at the
-   * wrong proportions. One frame on a fast machine; long enough to see on a phone
-   * loading the engine over 3G.
-   */
   function resize(): void {
     const { width, height } = host.getBoundingClientRect();
     if (!width || !height) return;
     renderer.setSize(width, height);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+
+    if (composer && options.tier === 'A') {
+      composer.setSize(width, height);
+      bloomPass?.setSize(width, height);
+    }
   }
 
   const observer = new ResizeObserver(() => {
@@ -428,9 +578,18 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
   renderer.domElement.addEventListener('webglcontextlost', onContextLost);
   controls.addEventListener('change', draw);
 
+  const { width: initW, height: initH } = host.getBoundingClientRect();
+  if (initW && initH) {
+    initComposer(initW, initH);
+  }
+
   resize();
   dress(options.garments, options.size);
-  renderer.render(scene, camera);
+  if (composer && options.tier === 'A') {
+    composer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
 
   return {
     dress,
@@ -463,10 +622,20 @@ export function createMannequinScene(options: SceneOptions): MannequinScene {
       worn.clear();
       jerseyNormal?.dispose();
       twillNormal?.dispose();
+      linenNormal?.dispose();
+      silkNormal?.dispose();
+      contactTexture?.dispose();
+      contactGeometry.dispose();
+      contactMaterial.dispose();
       body.geometry.dispose();
-      (body.mesh.material as THREE.Material).dispose();
+      bodyMaterial.dispose();
       groundGeometry.dispose();
       groundMaterial.dispose();
+      roomEnv.dispose();
+      envTexture.dispose();
+      pmremGenerator.dispose();
+      composer?.dispose();
+      bloomPass?.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
       renderer.domElement.remove();

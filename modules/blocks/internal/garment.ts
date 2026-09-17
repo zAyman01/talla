@@ -64,17 +64,95 @@ export interface FabricPreset {
   readonly bendStiffness: number;
   readonly stretchStiffness: number;
   readonly density: number;
+  readonly roughness?: number;
+  readonly sheen?: number;
+  readonly sheenRoughness?: number;
+  readonly clearcoat?: number;
+  readonly clearcoatRoughness?: number;
+  readonly normalScale?: number;
+  readonly normalKind?: 'jersey' | 'twill' | 'linen' | 'silk';
 }
 
 const FABRICS: readonly FabricPreset[] = [
-  { id: 'cotton-jersey', bendStiffness: 0.12, stretchStiffness: 0.35, density: 0.18 },
-  { id: 'denim-rigid', bendStiffness: 0.62, stretchStiffness: 0.88, density: 0.42 },
-  { id: 'linen', bendStiffness: 0.35, stretchStiffness: 0.15, density: 0.22 },
-  { id: 'silk-viscose', bendStiffness: 0.08, stretchStiffness: 0.1, density: 0.14 },
+  {
+    id: 'cotton-jersey',
+    bendStiffness: 0.12,
+    stretchStiffness: 0.35,
+    density: 0.18,
+    roughness: 0.76,
+    sheen: 0.4,
+    sheenRoughness: 0.45,
+    clearcoat: 0,
+    clearcoatRoughness: 0,
+    normalScale: 0.45,
+    normalKind: 'jersey',
+  },
+  {
+    id: 'denim-rigid',
+    bendStiffness: 0.62,
+    stretchStiffness: 0.88,
+    density: 0.42,
+    roughness: 0.88,
+    sheen: 0.15,
+    sheenRoughness: 0.6,
+    clearcoat: 0,
+    clearcoatRoughness: 0,
+    normalScale: 0.65,
+    normalKind: 'twill',
+  },
+  {
+    id: 'linen',
+    bendStiffness: 0.35,
+    stretchStiffness: 0.15,
+    density: 0.22,
+    roughness: 0.82,
+    sheen: 0.25,
+    sheenRoughness: 0.5,
+    clearcoat: 0,
+    clearcoatRoughness: 0,
+    normalScale: 0.55,
+    normalKind: 'linen',
+  },
+  {
+    id: 'silk-viscose',
+    bendStiffness: 0.08,
+    stretchStiffness: 0.1,
+    density: 0.14,
+    roughness: 0.28,
+    sheen: 0.85,
+    sheenRoughness: 0.25,
+    clearcoat: 0.25,
+    clearcoatRoughness: 0.15,
+    normalScale: 0.25,
+    normalKind: 'silk',
+  },
 ];
 
 export function fabric(id: string): FabricPreset | undefined {
   return FABRICS.find((preset) => preset.id === id);
+}
+
+const DEFAULT_FABRIC: FabricPreset = {
+  id: 'cotton-jersey',
+  bendStiffness: 0.12,
+  stretchStiffness: 0.35,
+  density: 0.18,
+  roughness: 0.76,
+  sheen: 0.4,
+  sheenRoughness: 0.45,
+  clearcoat: 0,
+  clearcoatRoughness: 0,
+  normalScale: 0.45,
+  normalKind: 'jersey',
+};
+
+export function garmentFabric(id: GarmentBlockId): FabricPreset {
+  const blockDef = GARMENT_BLOCKS.find((candidate) => candidate.id === id);
+  if (blockDef) {
+    const found = fabric(blockDef.fabricId);
+    if (found) return found;
+  }
+  return DEFAULT_FABRIC;
 }
 
 /** A point the fit reading is taken at, and the body girth it is compared against. */

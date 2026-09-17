@@ -78,6 +78,7 @@ export {
   block,
   bodyGirthAtFitPoint,
   fabric,
+  garmentFabric,
   garmentGirthAt,
   garmentMesh,
 } from './internal/garment.ts';

@@ -16,6 +16,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import {
+  ArrowClockwiseIcon,
+  ArrowCounterClockwiseIcon,
+  ArrowsInSimpleIcon,
+} from '@phosphor-icons/react';
 import type { BodySize } from '@talla/shared';
 import { TIER_BUDGET, createMannequinScene, probeTier } from '@talla/viewer';
 import type { DressedGarment, MannequinScene, SceneStyle } from '@talla/viewer';
@@ -168,15 +173,17 @@ export function Mannequin({ size, garments, onUnavailable }: MannequinProps): Re
           }}
           aria-label="تدوير المانيكان إلى اليسار"
         >
-          ↶
+          <ArrowCounterClockwiseIcon size={16} weight="regular" />
         </button>
         <button
           type="button"
           onClick={() => {
             scene.current?.recenter();
           }}
+          aria-label="إعادة ضبط العرض"
         >
-          إعادة العرض
+          <ArrowsInSimpleIcon size={16} weight="regular" />
+          <span>إعادة العرض</span>
         </button>
         <button
           type="button"
@@ -185,7 +192,7 @@ export function Mannequin({ size, garments, onUnavailable }: MannequinProps): Re
           }}
           aria-label="تدوير المانيكان إلى اليمين"
         >
-          ↷
+          <ArrowClockwiseIcon size={16} weight="regular" />
         </button>
       </div>
     </>
