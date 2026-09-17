@@ -26,6 +26,8 @@ out/
 *.key
 !**/fixtures/**/*.key
 secrets/
+credentials.json
+env-production.json
 
 # Test and coverage
 coverage/

@@ -2,7 +2,7 @@ import type { NextConfig } from 'next';
 const config: NextConfig = {
   // Standalone output: the image carries the server and the traced dependencies, not the
   // whole workspace. A smaller image is a smaller thing to keep patched.
-  output: 'standalone',
+  ...(process.env['VERCEL'] ? {} : { output: 'standalone' as const }),
   transpilePackages: ['@talla/trial', '@talla/tokens', '@talla/blocks', '@talla/shared'],
   poweredByHeader: false,
   headers() {
