@@ -14,7 +14,13 @@
 
 import type { BodySize } from '@talla/shared';
 import type { MeshData, Ring } from './geometry.ts';
-import { loft, mergeMeshes, ringAtHeight, ringPoints } from './geometry.ts';
+import {
+  computeNormals,
+  loft,
+  mergeMeshes,
+  ringAtHeight,
+  ringPoints,
+} from './geometry.ts';
 
 export const BODY_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
 
@@ -304,6 +310,70 @@ function ring(
   return { y, girthCm, depthRatio, centerX, centerZ, exponent };
 }
 
+function gaussian(value: number, center: number, width: number): number {
+  const normalized = (value - center) / width;
+  return Math.exp(-(normalized * normalized));
+}
+
+/**
+ * Give the measured torso the front/back structure a stack of symmetric rings cannot.
+ *
+ * The offsets stay in the millimetre range and preserve the graded stations as the fit
+ * contract. They add the forms cloth actually rests on: two soft bust volumes, a sternum
+ * transition, a clavicle plane, a glute projection and a sloping shoulder line.
+ */
+function sculptTorso(rings: readonly Ring[], segments: number): MeshData {
+  const base = loft(rings, { segments, capStart: true, capEnd: true });
+  const positions = Float32Array.from(base.positions);
+  const shellVertices = rings.length * segments;
+  for (let r = 0; r < rings.length; r += 1) {
+    const station = rings[r];
+    if (!station) continue;
+    const width = halfWidth(station, segments) || 1;
+    for (let s = 0; s < segments; s += 1) {
+      const vertex = r * segments + s;
+      if (vertex >= shellVertices) continue;
+      const offset = vertex * 3;
+      const x = positions[offset] ?? station.centerX;
+      const z = positions[offset + 2] ?? station.centerZ;
+      const dx = x - station.centerX;
+      const dz = z - station.centerZ;
+      const radius = Math.hypot(dx, dz) || 1;
+      const nx = dx / radius;
+      const nz = dz / radius;
+      const front = Math.max(0, nz) ** 2.4;
+      const back = Math.max(0, -nz) ** 2.1;
+      const normalizedX = Math.abs(dx) / width;
+      const bustLobes = Math.exp(-(((normalizedX - 0.38) / 0.25) ** 2));
+      const bust = gaussian(station.y, LANDMARK.bust, 0.055);
+      const sternum = gaussian(station.y, LANDMARK.chest, 0.065);
+      const hip = gaussian(station.y, LANDMARK.hip, 0.075);
+      const abdomen = gaussian(station.y, 1.105, 0.07);
+      const radial =
+        front * bust * (bustLobes * 0.0065 - (1 - bustLobes) * 0.0014) +
+        front * sternum * 0.0015 +
+        front * abdomen * 0.0018 +
+        back * hip * 0.006;
+      const shoulder = Math.max(
+        0,
+        Math.min(
+          1,
+          (station.y - LANDMARK.chest) / (LANDMARK.shoulderTop - LANDMARK.chest),
+        ),
+      );
+      positions[offset] = x + nx * radial;
+      positions[offset + 1] =
+        (positions[offset + 1] ?? station.y) - shoulder * Math.abs(nx) * 0.012;
+      positions[offset + 2] = z + nz * radial;
+    }
+  }
+  return {
+    ...base,
+    positions,
+    normals: computeNormals(positions, base.indices),
+  };
+}
+
 /** Mirror a limb loft to the other side of the figure. */
 export function mirrored(rings: readonly Ring[]): readonly Ring[] {
   return rings.map((r) => ({ ...r, centerX: -r.centerX }));
@@ -317,10 +387,9 @@ export function mirrored(rings: readonly Ring[]): readonly Ring[] {
  */
 export function bodyMesh(size: BodySize): MeshData {
   const stations = bodyStations(size);
-  const torso = { segments: stations.segments.torso, capStart: true, capEnd: true };
   const limb = { segments: stations.segments.limb, capStart: true, capEnd: false };
   return mergeMeshes([
-    loft(stations.torso, torso),
+    sculptTorso(stations.torso, stations.segments.torso),
     loft(stations.leg, limb),
     loft(mirrored(stations.leg), limb),
     loft(stations.arm, { ...limb, capStart: true }),

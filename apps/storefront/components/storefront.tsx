@@ -464,7 +464,7 @@ export function Storefront({
             </div>
 
             <div className="catalog-grid">
-              {visibleProducts.map((product) => {
+              {visibleProducts.map((product, index) => {
                 const selected = chosen.has(product.id);
                 const stocked = product.sizes.includes(size);
                 return (
@@ -483,6 +483,11 @@ export function Storefront({
                           height={product.imageHeight}
                           sizes="(max-width: 767px) 40vw, 20vw"
                           alt=""
+                          // The first row is visible beside the viewer on wide screens
+                          // and directly below it on phones. Fetch it during parsing so
+                          // the selected product photograph cannot become a late LCP.
+                          loading={index < 2 ? 'eager' : 'lazy'}
+                          fetchPriority={index === 0 ? 'high' : undefined}
                         />
                         {selected && (
                           <span className="selected-mark">

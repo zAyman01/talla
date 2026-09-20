@@ -63,13 +63,16 @@ export async function applyRetention(
   database: Database,
   tenantId: string,
   retentionDays: number,
+  referenceAt: Date = new Date(),
 ): Promise<number> {
   if (!Number.isSafeInteger(retentionDays) || retentionDays < 1 || retentionDays > 365)
     throw new Error('Invalid retention policy');
+  if (Number.isNaN(referenceAt.getTime()))
+    throw new Error('Invalid retention reference time');
   return database.tenant(tenantId, async (sql) => {
     const { rows } = await sql.query<{ id: string }>(
-      "UPDATE orders SET buyer_ciphertext=NULL,buyer_phone_hash='deleted:'||id::text WHERE buyer_ciphertext IS NOT NULL AND COALESCE(fulfilled_at,cancelled_at) < now()-($1 * interval '1 day') RETURNING id",
-      [retentionDays],
+      "UPDATE orders SET buyer_ciphertext=NULL,buyer_phone_hash='deleted:'||id::text WHERE buyer_ciphertext IS NOT NULL AND COALESCE(fulfilled_at,cancelled_at) < $2::timestamptz-($1 * interval '1 day') RETURNING id",
+      [retentionDays, referenceAt.toISOString()],
     );
     for (const row of rows)
       await sql.query(

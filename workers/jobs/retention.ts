@@ -48,6 +48,9 @@ export function createRetentionSweep(options: RetentionSweepOptions): RetentionS
 
   return {
     async runOnce(): Promise<SweepResult> {
+      // One timestamp owns the whole pass. Otherwise a sweep that crosses midnight can
+      // use one cut-off to erase contact data and a different date in its audit record.
+      const sweepAt = now();
       const { rows } = await options.database.platform((sql) =>
         sql.query<TenantRow>('SELECT id FROM tenants WHERE active ORDER BY created_at'),
       );
@@ -62,9 +65,10 @@ export function createRetentionSweep(options: RetentionSweepOptions): RetentionS
             options.database,
             tenant.id,
             options.retentionDays,
+            sweepAt,
           );
           erased += count;
-          await record(options, tenant.id, count, now());
+          await record(options, tenant.id, count, sweepAt);
         } catch (error) {
           // The class of failure, never its message. An exception message is the most
           // common way a buyer's address reaches a log line (spec 16.5).
