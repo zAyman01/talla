@@ -35,6 +35,21 @@ interface CartItem {
 
 const SIZES: readonly BodySize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
+/**
+ * Small, already-compressed previews for the default photographic outfit. Serving these
+ * files directly avoids doing a cold image transform while the buyer waits for the first
+ * useful paint. Other selections continue to use their original product photograph.
+ */
+const VIEWER_PREVIEWS: Readonly<Record<string, string>> = {
+  '/references/jeans.webp': '/previews/jeans.jpg',
+  '/catalog/clother/clother-7a070f4f4281c43d2113.webp':
+    '/previews/clother-7a070f4f4281c43d2113.jpg',
+};
+
+function viewerPreview(image: string): string {
+  return VIEWER_PREVIEWS[image] ?? image;
+}
+
 const VERDICT_LABEL: Record<FitVerdict, string> = {
   tight: 'ضيق',
   fitted: 'مضبوط',
@@ -274,12 +289,15 @@ export function Storefront({
                   {outfit.map((product) => (
                     <figure key={product.id} className={`outfit-piece ${product.slot}`}>
                       <Image
-                        src={product.image}
+                        src={viewerPreview(product.image)}
                         width={product.imageWidth}
                         height={product.imageHeight}
                         sizes="(max-width: 767px) 46vw, 24vw"
                         alt={product.name}
-                        priority
+                        priority={product.slot === 'bottom'}
+                        loading={product.slot === 'bottom' ? undefined : 'eager'}
+                        fetchPriority={product.slot === 'bottom' ? 'high' : 'low'}
+                        unoptimized
                       />
                       <figcaption>{product.name}</figcaption>
                     </figure>
@@ -464,7 +482,7 @@ export function Storefront({
             </div>
 
             <div className="catalog-grid">
-              {visibleProducts.map((product, index) => {
+              {visibleProducts.map((product) => {
                 const selected = chosen.has(product.id);
                 const stocked = product.sizes.includes(size);
                 return (
@@ -483,11 +501,7 @@ export function Storefront({
                           height={product.imageHeight}
                           sizes="(max-width: 767px) 40vw, 20vw"
                           alt=""
-                          // The first row is visible beside the viewer on wide screens
-                          // and directly below it on phones. Fetch it during parsing so
-                          // the selected product photograph cannot become a late LCP.
-                          loading={index < 2 ? 'eager' : 'lazy'}
-                          fetchPriority={index === 0 ? 'high' : undefined}
+                          loading="lazy"
                         />
                         {selected && (
                           <span className="selected-mark">

@@ -7,6 +7,7 @@ const ui = localFont({
   src: '../fonts/IBMPlexSansArabic-Regular.woff2',
   weight: '400',
   display: 'swap',
+  preload: false,
   variable: '--font-ui-loaded',
 });
 const display = localFont({

@@ -104,6 +104,11 @@ jobs:
       # a secret that was published.
       - name: gitleaks
         run: |
+          for attempt in 1 2 3; do
+            docker pull zricethezav/gitleaks:latest && break
+            if [ "$attempt" -eq 3 ]; then exit 1; fi
+            sleep $((attempt * 5))
+          done
           docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
             detect --source=/repo --redact --no-banner --exit-code 1
 
