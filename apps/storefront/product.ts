@@ -24,6 +24,14 @@ export interface CatalogSizeChart {
 export interface CatalogSource {
   readonly merchant: string;
   readonly productUrl: string;
+  readonly updatedAt?: string;
+}
+
+export interface CatalogImage {
+  readonly url: string;
+  readonly width: number;
+  readonly height: number;
+  readonly alt: string;
 }
 
 /**
@@ -44,12 +52,21 @@ export interface CatalogProduct {
   readonly imageWidth: number;
   readonly imageHeight: number;
   readonly price: number;
+  readonly compareAtPrice?: number;
   /**
    * Merchandise colour. Catalog data, not a design token: the garment is the only
    * saturated thing on the page, and its colour comes from the piece itself.
    */
   readonly colorHex: string;
   readonly colorLabel?: string;
+  /** Options and availability exactly as published by the source store. */
+  readonly colors: readonly string[];
+  readonly sourceSizes: readonly string[];
+  readonly allSourceSizes: readonly string[];
+  readonly description?: string;
+  /** Total source images. The full gallery is fetched only when details are opened. */
+  readonly imageCount: number;
+  readonly images: readonly CatalogImage[];
   readonly sizeChart?: CatalogSizeChart;
   readonly source?: CatalogSource;
   /** Only sizes with stock on hand. A size a buyer cannot have is not offered. */

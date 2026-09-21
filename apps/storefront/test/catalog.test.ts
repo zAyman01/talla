@@ -172,6 +172,18 @@ describe('toProduct', () => {
         catalog_image: { url: '/catalog/farid/top.webp', width: 720, height: 900 },
         color_hex: '#17181a',
         color_label: 'أسود',
+        colors: ['Black', 'Burgundy'],
+        source_sizes: ['L'],
+        all_source_sizes: ['M', 'L', 'XL'],
+        gallery: [
+          {
+            url: 'https://cdn.shopify.com/s/files/1/demo/product.jpg',
+            width: 1200,
+            height: 1600,
+            alt: 'قميص طويل',
+          },
+        ],
+        compare_at_price: 69900,
         source: {
           merchant: 'Farid Store',
           product_url: 'https://faridstore.site/products/top',
@@ -191,6 +203,14 @@ describe('toProduct', () => {
     expect(product?.blockId).toBe('tee-long-relaxed');
     expect(product?.image).toBe('/catalog/farid/top.webp');
     expect(product?.colorLabel).toBe('أسود');
+    expect(product?.colors).toEqual(['Black', 'Burgundy']);
+    expect(product?.sourceSizes).toEqual(['L']);
+    expect(product?.imageCount).toBe(1);
+    expect(product?.allSourceSizes).toEqual(['M', 'L', 'XL']);
+    expect(product?.compareAtPrice).toBe(69900);
+    expect(product?.images[0]?.url).toBe(
+      'https://cdn.shopify.com/s/files/1/demo/product.jpg',
+    );
     expect(product?.sizeChart?.rows.L?.sourceLabel).toBe('L');
     expect(product?.sizeChart?.rows.L?.measurements[0]).toEqual({
       key: 'width',

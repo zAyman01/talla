@@ -1,17 +1,19 @@
 # Demo catalog provenance
 
 The local `nasij` tenant is branded **طلّة / Talla** and is seeded from
-`demo-catalog.json`. The catalog snapshot was prepared on 2026-09-14 from the public
-product feeds and pages at:
+`demo-catalog.json`. Run `pnpm catalog:sync` to rebuild the snapshot from the public
+Shopify feeds at:
 
 - <https://faridstore.site/>
 - <https://clother-wear.com/>
 
-The 140 local WebP files in `apps/storefront/public/catalog` are optimized display copies
-of the public color-level product images. They total about 4 MB, are capped at 900 × 1100,
-and keep the storefront independent of third-party availability and CSP exceptions.
+The snapshot contains one record per real product page: currently 3 Farid products and 56
+Clother products. It keeps exact titles, prices, compare-at prices, live availability,
+source size labels, color options, product URLs, and every published gallery image. The 59
+local JPEG cover images in `apps/storefront/public/catalog/products` are capped at 1100 px;
+the complete galleries continue to use the original Shopify CDN images.
 
-Farid's three supplied charts are transcribed exactly into the snapshot. Clother chart
-values are preserved as strings, including ranges and visible source anomalies. Horizontal
-flat-garment values are never silently treated as body circumference. Where a chart did not
-print its unit, the note from the source snapshot remains visible in the storefront.
+Previously transcribed size charts are retained when the feed is refreshed. Values remain
+strings, including ranges and visible source anomalies. Horizontal flat-garment values are
+never silently treated as body circumference. The storefront also displays the exact live
+size options separately from the normalized mannequin body sizes.

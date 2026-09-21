@@ -15,6 +15,7 @@ import type { DressedGarment } from '@talla/viewer';
 import type { CatalogProduct } from '../product.ts';
 import { initialOutfit, toggleOutfit } from '../outfit.ts';
 import { CheckoutModal, type CheckoutLineItem } from './checkout-modal.tsx';
+import { ProductDetails } from './product-details.tsx';
 import { Suggestions } from './suggestions.tsx';
 
 const Mannequin = dynamic(() => import('./mannequin.tsx').then((m) => m.Mannequin), {
@@ -34,21 +35,6 @@ interface CartItem {
 }
 
 const SIZES: readonly BodySize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-
-/**
- * Small, already-compressed previews for the default photographic outfit. Serving these
- * files directly avoids doing a cold image transform while the buyer waits for the first
- * useful paint. Other selections continue to use their original product photograph.
- */
-const VIEWER_PREVIEWS: Readonly<Record<string, string>> = {
-  '/references/jeans.webp': '/previews/jeans.jpg',
-  '/catalog/clother/clother-7a070f4f4281c43d2113.webp':
-    '/previews/clother-7a070f4f4281c43d2113.jpg',
-};
-
-function viewerPreview(image: string): string {
-  return VIEWER_PREVIEWS[image] ?? image;
-}
 
 const VERDICT_LABEL: Record<FitVerdict, string> = {
   tight: 'ضيق',
@@ -106,6 +92,8 @@ export function Storefront({
   const [sourceFilter, setSourceFilter] = useState<CatalogSourceFilter>('all');
   const [slotFilter, setSlotFilter] = useState<CatalogSlotFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [detailProductId, setDetailProductId] = useState<ProductId | undefined>();
+  const [loadedDetail, setLoadedDetail] = useState<Product | undefined>();
 
   /**
    * The device tier, decided before the renderer is fetched (spec 11.2).
@@ -131,6 +119,9 @@ export function Storefront({
       }),
     [products, slotFilter, sourceFilter, searchQuery],
   );
+  const detailSummary = products.find((product) => product.id === detailProductId);
+  const detailProduct =
+    loadedDetail?.id === detailProductId ? loadedDetail : detailSummary;
 
   /**
    * Layering resolves by slot, outermost last. A top worn with a bottom is the `over`
@@ -199,6 +190,33 @@ export function Storefront({
   useEffect(() => {
     setTier(probeTier());
   }, []);
+
+  useEffect(() => {
+    if (!detailProductId) {
+      setLoadedDetail(undefined);
+      return;
+    }
+    const controller = new AbortController();
+    setLoadedDetail(undefined);
+    void fetch(`/api/catalog/details?id=${encodeURIComponent(detailProductId)}`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`catalog details ${String(response.status)}`);
+        return response.json() as Promise<{ readonly product: Product }>;
+      })
+      .then(({ product }) => {
+        setLoadedDetail(product);
+      })
+      .catch((error: unknown) => {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          setLoadedDetail(undefined);
+        }
+      });
+    return () => {
+      controller.abort();
+    };
+  }, [detailProductId]);
 
   function toggle(id: ProductId): void {
     setChosen((current) => toggleOutfit(products, current, id));
@@ -289,7 +307,7 @@ export function Storefront({
                   {outfit.map((product) => (
                     <figure key={product.id} className={`outfit-piece ${product.slot}`}>
                       <Image
-                        src={viewerPreview(product.image)}
+                        src={product.image}
                         width={product.imageWidth}
                         height={product.imageHeight}
                         sizes="(max-width: 767px) 46vw, 24vw"
@@ -464,7 +482,7 @@ export function Storefront({
                     ['all', 'كل الأنواع'],
                     ['top', 'علوي'],
                     ['bottom', 'سفلي'],
-                    ['outer', 'عبايات ومعاطف'],
+                    ['outer', 'قطع خارجية'],
                   ] as const
                 ).map(([value, label]) => (
                   <button
@@ -519,13 +537,35 @@ export function Storefront({
                             {product.colorLabel}
                           </span>
                         )}
-                        <span className="price numeric">{money(product.price)}</span>
+                        <span className="price numeric">
+                          {money(product.price)}
+                          {product.compareAtPrice && (
+                            <del>{money(product.compareAtPrice)}</del>
+                          )}
+                        </span>
+                        <span className="source-sizes">
+                          {product.sourceSizes.length > 0
+                            ? `المقاسات: ${product.sourceSizes.join('، ')}`
+                            : 'نفد المخزون'}
+                        </span>
                       </span>
                     </button>
+                    <button
+                      type="button"
+                      className="product-details-trigger"
+                      onClick={() => {
+                        setDetailProductId(product.id);
+                      }}
+                    >
+                      كل الصور والتفاصيل
+                      <span className="numeric">({product.imageCount})</span>
+                    </button>
                     <p className={stocked ? 'stock-line' : 'stock-line out'}>
-                      {stocked
-                        ? `متوفر بمقاس ${size}`
-                        : `غير متوفر بمقاس ${size}. المقاسات المتاحة: ${product.sizes.join('، ')}`}
+                      {product.sourceSizes.length === 0
+                        ? 'نفد المخزون من المصدر'
+                        : stocked
+                          ? `متوفر بمقاس ${size}`
+                          : `اختاري مقاسًا متاحًا من: ${product.sourceSizes.join('، ')}`}
                     </p>
                   </article>
                 );
@@ -562,6 +602,14 @@ export function Storefront({
         items={cartLines}
         onUpdateQuantity={updateQuantity}
         onClearCart={clearCart}
+      />
+      <ProductDetails
+        product={detailProduct}
+        selected={detailProduct ? chosen.has(detailProduct.id) : false}
+        onTryOn={toggle}
+        onClose={() => {
+          setDetailProductId(undefined);
+        }}
       />
     </div>
   );

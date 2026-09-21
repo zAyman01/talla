@@ -75,10 +75,10 @@ export function writeIsSameOrigin(
  * embed by definition. That conflict is expected, and it is one of the reasons spec 22
  * requires the threat model to be re-run before the widget ships.
  */
-export function contentSecurityPolicy(nonce: string): string {
+export function contentSecurityPolicy(nonce: string, allowUnsafeEval = false): string {
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${allowUnsafeEval ? " 'unsafe-eval'" : ''}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self'",
@@ -102,6 +102,8 @@ export interface SecurityHeaderOptions {
   readonly hsts: boolean;
   /** Per-request, from `newTraceId`'s generator. Absent means no policy is sent. */
   readonly nonce?: string | undefined;
+  /** React's development runtime reconstructs stack traces with eval; never enabled in production. */
+  readonly allowUnsafeEval?: boolean | undefined;
 }
 
 /**
@@ -127,7 +129,10 @@ export function securityHeaders(
     ]);
   }
   if (options.nonce !== undefined) {
-    headers.push(['Content-Security-Policy', contentSecurityPolicy(options.nonce)]);
+    headers.push([
+      'Content-Security-Policy',
+      contentSecurityPolicy(options.nonce, options.allowUnsafeEval),
+    ]);
   }
   return headers;
 }

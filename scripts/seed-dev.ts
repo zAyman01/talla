@@ -17,12 +17,27 @@ interface DemoProduct {
   readonly key: string;
   readonly name: string;
   readonly nameEn: string;
-  readonly slot: 'top' | 'bottom';
+  readonly slot: 'top' | 'bottom' | 'outer';
   readonly blockId: string;
   readonly price: number;
+  readonly compareAtPrice?: number;
   readonly colorHex: string;
-  readonly colorLabel: string;
-  readonly source: { readonly merchant: string; readonly productUrl: string };
+  readonly colorLabel?: string;
+  readonly colors: readonly string[];
+  readonly sourceSizes: readonly string[];
+  readonly allSourceSizes: readonly string[];
+  readonly description?: string;
+  readonly images: readonly {
+    readonly url: string;
+    readonly width: number;
+    readonly height: number;
+    readonly alt: string;
+  }[];
+  readonly source: {
+    readonly merchant: string;
+    readonly productUrl: string;
+    readonly updatedAt?: string;
+  };
   readonly sizeChart?: unknown;
   readonly image: string;
   readonly imageWidth: number;
@@ -82,10 +97,17 @@ function publishedAssets(product: DemoProduct, sortOrder: number): string {
       height: product.imageHeight,
     },
     color_hex: product.colorHex,
-    color_label: product.colorLabel,
+    ...(product.colorLabel ? { color_label: product.colorLabel } : {}),
+    colors: product.colors,
+    source_sizes: product.sourceSizes,
+    all_source_sizes: product.allSourceSizes,
+    description: product.description,
+    gallery: product.images,
+    compare_at_price: product.compareAtPrice,
     source: {
       merchant: product.source.merchant,
       product_url: product.source.productUrl,
+      updated_at: product.source.updatedAt,
     },
     size_chart: product.sizeChart,
     sort_order: sortOrder,
@@ -130,10 +152,15 @@ try {
   await client.query("SELECT set_config('app.current_tenant', $1, false)", [store]);
   await client.query('BEGIN');
   try {
-    // Keep old local orders readable while removing the superseded placeholders from the
-    // live catalog.
+    // Keep old local orders readable while removing records that disappeared from the
+    // current source snapshot. Current records are reactivated by the upsert below.
     await client.query(
       "UPDATE garments SET status = 'archived' WHERE published_assets IS NULL AND spec ? 'display'",
+    );
+    await client.query(
+      `UPDATE garments
+       SET status = 'archived'
+       WHERE published_assets @> '{"demo_catalog":true}'::jsonb`,
     );
 
     for (const [sortOrder, product] of catalog.products.entries()) {

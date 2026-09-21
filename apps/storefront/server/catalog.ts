@@ -4,6 +4,7 @@ import { GARMENT_BLOCKS } from '@talla/blocks';
 import type { GarmentBlockId } from '@talla/blocks';
 import type {
   CatalogMeasurement,
+  CatalogImage,
   CatalogProduct,
   CatalogSizeChart,
   CatalogSizeChartRow,
@@ -38,7 +39,7 @@ const BLOCKS = new Set<string>(GARMENT_BLOCKS.map((candidate) => candidate.id));
 const SLOT_LABEL: Readonly<Record<'top' | 'bottom' | 'outer', string>> = {
   top: 'قطعة علوية',
   bottom: 'قطعة سفلية',
-  outer: 'عباية ومعاطف',
+  outer: 'قطع خارجية',
 };
 
 function field(source: unknown, name: string): unknown {
@@ -79,13 +80,49 @@ function source(value: unknown): CatalogSource | undefined {
   const item = record(value);
   const merchant = item?.['merchant'];
   const productUrl = item?.['product_url'];
+  const updatedAt = item?.['updated_at'];
   if (
     typeof merchant !== 'string' ||
     typeof productUrl !== 'string' ||
     !productUrl.startsWith('https://')
   )
     return undefined;
-  return { merchant, productUrl };
+  return {
+    merchant,
+    productUrl,
+    ...(typeof updatedAt === 'string' ? { updatedAt } : {}),
+  };
+}
+
+function stringList(value: unknown): readonly string[] {
+  return Array.isArray(value)
+    ? value.filter((candidate): candidate is string => typeof candidate === 'string')
+    : [];
+}
+
+function catalogImages(value: unknown): readonly CatalogImage[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((candidate) => {
+    const item = record(candidate);
+    const url = item?.['url'];
+    const width = item?.['width'];
+    const height = item?.['height'];
+    const alt = item?.['alt'];
+    if (
+      typeof url !== 'string' ||
+      !url.startsWith('https://cdn.shopify.com/') ||
+      typeof width !== 'number' ||
+      !Number.isSafeInteger(width) ||
+      width < 1 ||
+      typeof height !== 'number' ||
+      !Number.isSafeInteger(height) ||
+      height < 1 ||
+      typeof alt !== 'string'
+    ) {
+      return [];
+    }
+    return [{ url, width, height, alt }];
+  });
 }
 
 function measurement(value: unknown): CatalogMeasurement | undefined {
@@ -149,15 +186,23 @@ export function toProduct(row: CatalogRow): CatalogProduct | undefined {
   const assets = row.published_assets;
   const blockId = field(row.spec, 'block_id');
   const slot = field(style, 'slot');
-  const colors = field(style, 'dominant_colors');
+  const dominantColors = field(style, 'dominant_colors');
   // `Array.isArray` narrows `unknown` to `any[]`, so the element needs its own type back
   // before it is read. The guard below is what actually admits it.
-  const palette: readonly unknown[] = Array.isArray(colors) ? (colors as unknown[]) : [];
+  const palette: readonly unknown[] = Array.isArray(dominantColors)
+    ? (dominantColors as unknown[])
+    : [];
   const colorHex = field(assets, 'color_hex') ?? palette[0];
   const colorLabel = field(assets, 'color_label');
   const picture = catalogImage(assets, display);
   const itemSource = source(field(assets, 'source'));
   const chart = sizeChart(field(assets, 'size_chart'));
+  const images = catalogImages(field(assets, 'gallery'));
+  const colors = stringList(field(assets, 'colors'));
+  const sourceSizes = stringList(field(assets, 'source_sizes'));
+  const allSourceSizes = stringList(field(assets, 'all_source_sizes'));
+  const description = field(assets, 'description');
+  const compareAtPrice = field(assets, 'compare_at_price');
 
   if (
     typeof blockId !== 'string' ||
@@ -179,8 +224,17 @@ export function toProduct(row: CatalogRow): CatalogProduct | undefined {
     imageWidth: picture.width,
     imageHeight: picture.height,
     price: row.price,
+    ...(typeof compareAtPrice === 'number' && compareAtPrice > row.price
+      ? { compareAtPrice }
+      : {}),
     colorHex,
     ...(typeof colorLabel === 'string' ? { colorLabel } : {}),
+    colors,
+    sourceSizes,
+    allSourceSizes,
+    ...(typeof description === 'string' && description !== '' ? { description } : {}),
+    imageCount: images.length,
+    images,
     ...(chart === undefined ? {} : { sizeChart: chart }),
     ...(itemSource === undefined ? {} : { source: itemSource }),
     sizes: SIZES.filter((size) => (row.sizes ?? []).includes(size)),

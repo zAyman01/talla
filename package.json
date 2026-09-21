@@ -20,6 +20,7 @@
     "dev": "pnpm --parallel --filter @talla/storefront --filter @talla/admin dev",
     "build": "pnpm --filter @talla/storefront --filter @talla/admin build",
     "budget": "node scripts/bundle-budget.ts storefront && node scripts/bundle-budget.ts admin",
+    "catalog:sync": "node scripts/catalog/sync-shopify.ts",
     "seed": "node scripts/seed-dev.ts"
   },
   "devDependencies": {

@@ -29,5 +29,8 @@ export default async function Page(): Promise<ReactNode> {
   // hand an attacker the list of stores that exist.
   if (!result.ok) return <ClosedStore />;
 
-  return <Storefront products={result.value} />;
+  // Gallery metadata can be hundreds of entries per product. Keep it out of the initial
+  // React payload and fetch one product's gallery only when its details are opened.
+  const summaries = result.value.map((product) => ({ ...product, images: [] }));
+  return <Storefront products={summaries} />;
 }

@@ -4,6 +4,15 @@ const config: NextConfig = {
   // whole workspace. A smaller image is a smaller thing to keep patched.
   ...(process.env['VERCEL'] ? {} : { output: 'standalone' as const }),
   transpilePackages: ['@talla/trial', '@talla/tokens', '@talla/blocks', '@talla/shared'],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cdn.shopify.com',
+        pathname: '/s/files/**',
+      },
+    ],
+  },
   poweredByHeader: false,
   headers() {
     return Promise.resolve([

@@ -14,6 +14,11 @@ function product(id: string, slot: 'top' | 'bottom'): CatalogProduct {
     imageHeight: 20,
     price: 100,
     colorHex: '#111111',
+    colors: ['Black'],
+    sourceSizes: ['M'],
+    allSourceSizes: ['M'],
+    imageCount: 1,
+    images: [],
     sizes: ['M'],
   };
 }

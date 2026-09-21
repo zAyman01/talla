@@ -42,6 +42,7 @@ export function proxy(request: NextRequest): NextResponse {
   for (const [name, value] of securityHeaders({
     hsts: process.env.NODE_ENV === 'production',
     nonce,
+    allowUnsafeEval: process.env.NODE_ENV === 'development',
   })) {
     response.headers.set(name, value);
   }

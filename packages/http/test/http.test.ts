@@ -101,4 +101,15 @@ describe('securityHeaders', () => {
     // afternoon and teaches them to distrust the headers.
     expect(securityHeaders({ hsts: false })).toEqual([]);
   });
+
+  it('allows eval only when a caller explicitly enables the development runtime', () => {
+    const development = new Map(
+      securityHeaders({ hsts: false, nonce: 'test', allowUnsafeEval: true }),
+    );
+    const production = new Map(
+      securityHeaders({ hsts: true, nonce: 'test', allowUnsafeEval: false }),
+    );
+    expect(development.get('Content-Security-Policy')).toContain("'unsafe-eval'");
+    expect(production.get('Content-Security-Policy')).not.toContain("'unsafe-eval'");
+  });
 });
