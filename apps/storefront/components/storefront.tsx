@@ -37,17 +37,11 @@ interface CartItem {
 const SIZES: readonly BodySize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 const CATALOG_PAGE_SIZE = 12;
 
-/** Tiny first-paint copies for the default photographic fallback on low-power devices. */
-const VIEWER_PREVIEWS: Readonly<Record<string, string>> = {
-  '/catalog/products/farid-basic-t-shirt-for-women-b41d57d7b61e.jpg':
-    '/previews/farid-basic-t-shirt-for-women.jpg',
-  '/catalog/products/farid-sweet-pants-wide-leg-828a48781359.jpg':
-    '/previews/farid-sweet-pants-wide-leg.jpg',
+/** Inline first-paint copies avoid a second network round trip on low-power devices. */
+const VIEWER_INLINE_PREVIEWS: Readonly<Record<string, string>> = {
+  '/catalog/products/farid-basic-t-shirt-for-women-b41d57d7b61e.jpg': 'outfit-inline-top',
+  '/catalog/products/farid-sweet-pants-wide-leg-828a48781359.jpg': 'outfit-inline-bottom',
 };
-
-function viewerPreview(image: string): string {
-  return VIEWER_PREVIEWS[image] ?? image;
-}
 
 const VERDICT_LABEL: Record<FitVerdict, string> = {
   tight: 'ضيق',
@@ -319,22 +313,31 @@ export function Storefront({
             ) : tier === undefined || photographic ? (
               <div className="viewer-stage">
                 <div className="outfit-images">
-                  {outfit.map((product) => (
-                    <figure key={product.id} className={`outfit-piece ${product.slot}`}>
-                      <Image
-                        src={viewerPreview(product.image)}
-                        width={product.imageWidth}
-                        height={product.imageHeight}
-                        sizes="(max-width: 767px) 46vw, 24vw"
-                        alt={product.name}
-                        priority={product.slot === 'bottom'}
-                        loading={product.slot === 'bottom' ? undefined : 'eager'}
-                        fetchPriority={product.slot === 'bottom' ? 'high' : 'low'}
-                        unoptimized
-                      />
-                      <figcaption>{product.name}</figcaption>
-                    </figure>
-                  ))}
+                  {outfit.map((product) => {
+                    const inlinePreview = VIEWER_INLINE_PREVIEWS[product.image];
+                    return (
+                      <figure key={product.id} className={`outfit-piece ${product.slot}`}>
+                        {inlinePreview ? (
+                          <span
+                            role="img"
+                            aria-label={product.name}
+                            className={`outfit-inline-preview ${inlinePreview}`}
+                          />
+                        ) : (
+                          <Image
+                            src={product.image}
+                            width={product.imageWidth}
+                            height={product.imageHeight}
+                            sizes="(max-width: 767px) 46vw, 24vw"
+                            alt={product.name}
+                            loading="eager"
+                            unoptimized
+                          />
+                        )}
+                        <figcaption>{product.name}</figcaption>
+                      </figure>
+                    );
+                  })}
                 </div>
               </div>
             ) : (
