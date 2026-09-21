@@ -35,6 +35,7 @@ interface CartItem {
 }
 
 const SIZES: readonly BodySize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+const CATALOG_PAGE_SIZE = 12;
 
 /** Tiny first-paint copies for the default photographic fallback on low-power devices. */
 const VIEWER_PREVIEWS: Readonly<Record<string, string>> = {
@@ -104,6 +105,7 @@ export function Storefront({
   const [sourceFilter, setSourceFilter] = useState<CatalogSourceFilter>('all');
   const [slotFilter, setSlotFilter] = useState<CatalogSlotFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [catalogLimit, setCatalogLimit] = useState(CATALOG_PAGE_SIZE);
   const [detailProductId, setDetailProductId] = useState<ProductId | undefined>();
   const [loadedDetail, setLoadedDetail] = useState<Product | undefined>();
 
@@ -117,7 +119,7 @@ export function Storefront({
     [chosen, products],
   );
 
-  const visibleProducts = useMemo(
+  const filteredProducts = useMemo(
     () =>
       products.filter((product) => {
         const matchesSource =
@@ -131,6 +133,7 @@ export function Storefront({
       }),
     [products, slotFilter, sourceFilter, searchQuery],
   );
+  const visibleProducts = filteredProducts.slice(0, catalogLimit);
   const detailSummary = products.find((product) => product.id === detailProductId);
   const detailProduct =
     loadedDetail?.id === detailProductId ? loadedDetail : detailSummary;
@@ -462,6 +465,7 @@ export function Storefront({
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
+                  setCatalogLimit(CATALOG_PAGE_SIZE);
                 }}
                 placeholder="ابحثي بالاسم أو النوع…"
               />
@@ -482,6 +486,7 @@ export function Storefront({
                     aria-pressed={sourceFilter === value}
                     onClick={() => {
                       setSourceFilter(value);
+                      setCatalogLimit(CATALOG_PAGE_SIZE);
                     }}
                   >
                     {label}
@@ -503,6 +508,7 @@ export function Storefront({
                     aria-pressed={slotFilter === value}
                     onClick={() => {
                       setSlotFilter(value);
+                      setCatalogLimit(CATALOG_PAGE_SIZE);
                     }}
                   >
                     {label}
@@ -583,6 +589,20 @@ export function Storefront({
                 );
               })}
             </div>
+            {visibleProducts.length < filteredProducts.length && (
+              <button
+                type="button"
+                className="catalog-more"
+                onClick={() => {
+                  setCatalogLimit((current) => current + CATALOG_PAGE_SIZE);
+                }}
+              >
+                عرض المزيد
+                <span className="numeric">
+                  ({filteredProducts.length - visibleProducts.length} قطعة)
+                </span>
+              </button>
+            )}
           </section>
         </div>
       </main>
