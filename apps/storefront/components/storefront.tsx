@@ -36,6 +36,18 @@ interface CartItem {
 
 const SIZES: readonly BodySize[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
+/** Tiny first-paint copies for the default photographic fallback on low-power devices. */
+const VIEWER_PREVIEWS: Readonly<Record<string, string>> = {
+  '/catalog/products/farid-basic-t-shirt-for-women-b41d57d7b61e.jpg':
+    '/previews/farid-basic-t-shirt-for-women.jpg',
+  '/catalog/products/farid-sweet-pants-wide-leg-828a48781359.jpg':
+    '/previews/farid-sweet-pants-wide-leg.jpg',
+};
+
+function viewerPreview(image: string): string {
+  return VIEWER_PREVIEWS[image] ?? image;
+}
+
 const VERDICT_LABEL: Record<FitVerdict, string> = {
   tight: 'ضيق',
   fitted: 'مضبوط',
@@ -307,7 +319,7 @@ export function Storefront({
                   {outfit.map((product) => (
                     <figure key={product.id} className={`outfit-piece ${product.slot}`}>
                       <Image
-                        src={product.image}
+                        src={viewerPreview(product.image)}
                         width={product.imageWidth}
                         height={product.imageHeight}
                         sizes="(max-width: 767px) 46vw, 24vw"
